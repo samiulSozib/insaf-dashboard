@@ -17,6 +17,7 @@ export const _fetchSingleProvider = (
   providerId: number,
   code: string,
   capability: string,
+  company:string,
   page: number = 1,
   search: string = '',
   filters: Record<string, any> = {}
@@ -27,7 +28,8 @@ export const _fetchSingleProvider = (
     const token = getAuthToken();
     const queryParams = new URLSearchParams();
 
-    queryParams.append('page', String(page));
+    queryParams.append("company",company)
+    //queryParams.append('page', String(page));
     if (search) queryParams.append('search', search);
 
     Object.entries(filters).forEach(([key, value]) => {
@@ -42,13 +44,17 @@ export const _fetchSingleProvider = (
     const response = await axios.get(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    console.log(response)
 
     dispatch({
       type: FETCH_SINGLE_PROVIDER_SUCCESS,
       payload: {
         provider: response.data.data.provider,
         internets: response.data.data.internet,
-        rawInternets:response.data.data.raw.internet,
+        //rawInternets:response.data.data.raw.internet,
+        rawInternets:response.data.data.categories[0].bundles,
+        rawBundles:response.data.data.bundles,
+        
         pagination: response.data.payload?.pagination || null,
       },
     });

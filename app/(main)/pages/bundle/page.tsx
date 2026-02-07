@@ -89,13 +89,15 @@ const BundlePage = () => {
 
     const [activeFilters, setActiveFilters] = useState({});
     const { providers } = useSelector((state: any) => state.providerReducer);
-    const { rawInternets } = useSelector((state: any) => state.singleProviderReducer);
+    const { rawInternets, rawBundles } = useSelector((state: any) => state.singleProviderReducer);
 
     const [providerSearchTag, setProviderSearchTag] = useState('');
 
     const [unsetDialogVisible, setUnsetDialogVisible] = useState(false);
     const [bundleToUnset, setBundleToUnset] = useState<Bundle | null>(null);
     const [editingRows, setEditingRows] = useState({});
+
+
 
 
     useEffect(() => {
@@ -119,14 +121,19 @@ const BundlePage = () => {
     }, [providerSearchTag, dispatch]);
 
     useEffect(() => {
-        if (selectedProvider && selectedCapability) dispatch(_fetchSingleProvider(selectedProvider?.id, selectedProvider?.code, selectedCapability));
-    }, [dispatch, selectedProvider, selectedCapability]);
+        if (selectedProvider && selectedCapability) dispatch(_fetchSingleProvider(selectedProvider?.id, selectedProvider?.code, selectedCapability,bundle.service?.company?.company_name??""));
+    }, [dispatch, selectedProvider, selectedCapability,bundle.service?.company?.company_name]);
 
     useEffect(() => {
         if (Object.keys(activeFilters).length > 0) {
             dispatch(_fetchBundleList(1, searchTag, activeFilters));
         }
     }, [dispatch, activeFilters, searchTag]);
+
+
+    useEffect(() => {
+        console.log(rawInternets)
+    }, [dispatch, rawInternets])
 
     const openNew = () => {
         setBundle(emptyBundle);
@@ -300,6 +307,7 @@ const BundlePage = () => {
                 const providerBundle = rawInternets.find((b: any) => String(b.table_id) === String(parsedApiBinding.table_id) && String(b.id) === String(parsedApiBinding.product_id));
 
                 if (providerBundle) {
+                    console.log(providerBundle)
                     setSelectedProviderBundle(providerBundle);
                 } else {
                     console.warn('Bundle not found in rawInternets, falling back to parsed object');
@@ -409,8 +417,9 @@ const BundlePage = () => {
         const hasSelectedBundles = selectedBundles && (selectedBundles as any).length > 0;
         return (
             <React.Fragment>
+
                 <div className="my-2" style={{ display: 'flex', gap: '0.5rem', position: 'relative' }}>
-                    <div ref={filterRef} style={{ position: 'relative' }}>
+                    <div className="flex-shrink-0 h-10 min-w-0" ref={filterRef} style={{ position: 'relative' }}>
                         <Button style={{ gap: '8px' }} label={t('ORDER.FILTER.FILTER')} icon="pi pi-filter" className="p-button-info" onClick={() => setFilterDialogVisible(!filterDialogVisible)} />
                         {filterDialogVisible && (
                             <div
@@ -418,8 +427,8 @@ const BundlePage = () => {
                                 style={{
                                     position: 'absolute',
                                     top: '100%',
-                                    left: isRTL() ? 0 : '',
-                                    right: isRTL() ? '' : 0,
+                                    left: isRTL() ? '-100%' : '-20%',
+                                    right: isRTL() ? '-20%' : '-100%',
                                     width: '300px',
                                     zIndex: 1000,
                                     marginTop: '0.5rem',
@@ -1244,50 +1253,77 @@ const BundlePage = () => {
                                 <div className="field col">
                                     <label htmlFor="provider">{t('BUNDLE')} *</label>
                                     <Dropdown
-                                        id="provider"
-                                        value={selectedProviderBundle}
-                                        options={rawInternets}
-                                        onChange={(e) => {
-                                            console.log(e.value);
-                                            setSelectedProviderBundle(e.value);
-                                        }}
-                                        optionLabel="name"
-                                        filter
-                                        filterBy="name"
-                                        filterPlaceholder={t('ECOMMERCE.COMMON.SEARCH')}
-                                        showFilterClear
-                                        placeholder={t('SEARCH_PROVIDER')}
-                                        className="w-full"
-                                        panelClassName="min-w-[20rem]"
-                                        itemTemplate={(option) => (
-                                            <div className="flex flex-col p-2 gap-2 item-center">
-                                                <div className="font-semibold text-sm">{option.name}</div>
-                                                <div className="flex flex-wrap gap-2 text-xs text-gray-600">
-                                                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">{option.operator}</span>
-                                                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
-                                                        {option.volume} {option.unit}
-                                                    </span>
-                                                    {option.days && <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded">{option.days}</span>}
-                                                    <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded">{option.periodicity}</span>
-                                                    <span className="bg-red-100 text-red-800 px-2 py-1 rounded">{option.amount_rial ? `${option.amount_rial}` : `${option.amount}`}</span>
-                                                </div>
-                                                <div className="text-xs text-gray-500 mt-1">
-                                                    {option.internet_type} | {option.sim_type}
-                                                </div>
-                                            </div>
-                                        )}
-                                        valueTemplate={(option) => {
-                                            if (!option) return t('SEARCH_BUNDLE');
-                                            return (
-                                                <div className="flex flex-col">
-                                                    <span className="font-semibold text-sm">{option.name}</span>
-                                                    <span className="text-xs text-gray-600">
-                                                        {option.volume} {option.unit} <span className="mx-2"> | </span> {option.amount_rial ? `${option.amount_rial}` : `${option.amount}`}{' '}
-                                                    </span>
-                                                </div>
-                                            );
-                                        }}
-                                    />
+    id="provider"
+    value={selectedProviderBundle}
+    // options={rawInternets.filter((item: RawInternet) => {
+    //     // If no service is selected, show all options
+    //      if (!bundle.service) return true;
+        
+    //     // Get the company name from the selected service
+    //     const serviceCompanyName = bundle.service?.company?.company_name;
+    //     //const serviceCompanyName = bundle.service?.service_category?.category_name;
+        
+    //     // Get the operator from rawInternet meta
+    //     const rawInternetOperator = item.meta?.operator || item.operator;
+        
+    //     // If either is missing, don't include
+    //     if (!serviceCompanyName || !rawInternetOperator) return false;
+        
+    //     // Check if operator matches service company name (case insensitive)
+    //     const serviceNameLower = serviceCompanyName.toLowerCase();
+    //     const operatorLower = rawInternetOperator.toLowerCase();
+        
+    //     return serviceNameLower.includes(operatorLower) || 
+    //            operatorLower.includes(serviceNameLower);
+    // })}
+    options={rawInternets}
+    onChange={(e) => {
+        console.log(e.value);
+        setSelectedProviderBundle(e.value);
+    }}
+    optionLabel="name"
+    filter
+    filterBy="title,operator,validity"
+    filterPlaceholder={t('ECOMMERCE.COMMON.SEARCH')}
+    showFilterClear
+    placeholder={t('SEARCH_PROVIDER')}
+    className="w-full"
+    panelClassName="min-w-[20rem]"
+    itemTemplate={(option) => (
+        <div className="flex flex-col p-2 gap-2 item-center">
+            <div className="font-semibold text-sm">{option.name || option.title}</div>
+            <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">{option.operator}</span>
+                {option.validity && <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded">{option.validity}</span>}
+                {option.price && <span className="bg-red-100 text-red-800 px-2 py-1 rounded">Price: {option.price}</span>}
+                {option.tprice && <span className="bg-green-100 text-green-800 px-2 py-1 rounded">TPrice: {option.tprice}</span>}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+                {option.Category}
+                {bundle.service && (
+                    <div className="text-xs text-green-600 mt-1">
+                        Matches: {bundle.service.company?.company_name}
+                    </div>
+                )}
+            </div>
+        </div>
+    )}
+    valueTemplate={(option) => {
+        if (!option) return t('SEARCH_BUNDLE');
+        return (
+            <div className="flex flex-col">
+                <span className="font-semibold text-sm">{option.name || option.title}</span>
+                <span className="mx-2 text-xs text-gray-600">
+                    {option.operator}
+                    {(option.price || option.tprice) && <span className="mx-2"> | </span>}
+                    {option.price && <span>Price: {option.price}</span>}
+                    {option.price && option.tprice && <span className="mx-1">•</span>}
+                    {option.tprice && <span>TPrice: {option.tprice}</span>}
+                </span>
+            </div>
+        );
+    }}
+/>
                                 </div>
                             </div>
                             <div className="gridcol col">{bundle.api_provider_id && <Button label={t('UNSET_BUNDLE')} icon="pi pi-times" severity="danger" className={isRTL() ? 'rtl-button' : ''} onClick={() => confirmUnsetBundle(bundle)} />}</div>

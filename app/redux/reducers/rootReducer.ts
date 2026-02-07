@@ -39,6 +39,11 @@ import {appSettingsReducer} from './appSettingsReducer'
 import { providerReducer } from './providerReducer';
 import {singleProviderReducer} from './singleProviderReducer'
 import {hawalaNumberSeriesReducer} from './hawalaSeriesReducer'
+import { supportContactReducer } from './supportContactReducer';
+import notificationReducer from './notificationReducer';
+import { withdrawPoliciesReducer } from './withdrawPolicyReducer';
+import { withdrawRequestsReducer } from './withdrawalRequestReducer';
+import {providerInfoReducer} from './provideInfoReducer'
 
 const rootReducer=combineReducers({
     currenciesReducer:currenciesReducer,
@@ -80,7 +85,12 @@ const rootReducer=combineReducers({
     appSettingsReducer:appSettingsReducer,
     providerReducer:providerReducer,
     singleProviderReducer:singleProviderReducer,
-    hawalaNumberSeriesReducer:hawalaNumberSeriesReducer
+    hawalaNumberSeriesReducer:hawalaNumberSeriesReducer,
+    supportContactReducer:supportContactReducer,
+    notificationReducer:notificationReducer,
+    withdrawPoliciesReducer:withdrawPoliciesReducer,
+    withdrawRequestsReducer:withdrawRequestsReducer,
+    providerInfoReducer:providerInfoReducer
 })
 
 

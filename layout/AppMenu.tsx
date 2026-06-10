@@ -107,6 +107,11 @@ const AppMenu = () => {
                             label: t('MENU.MAKE_EARNING_BALANCE'),
                             icon: 'pi pi-fw pi-plus-circle',
                             to: '/pages/earning-balance-form'
+                        },
+                        {
+                            label: t('MENU.WALLETS'),
+                            icon: 'pi pi-fw pi-plus-circle',
+                            to: '/pages/wallets'
                         }
                     ]
                 },
@@ -257,6 +262,11 @@ const AppMenu = () => {
                     label: t('MENU.WITHDRAWAL_REQUEST'),
                     icon: 'pi pi-fw pi-question-circle',
                     to: '/pages/withdrawal-request'
+                },
+                {
+                    label: t('MENU.API_KEYS'),
+                    icon: 'pi pi-fw pi-question-circle',
+                    to: '/pages/api-keys'
                 },
             ]
         }

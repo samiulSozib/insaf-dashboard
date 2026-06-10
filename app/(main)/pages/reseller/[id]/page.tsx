@@ -23,6 +23,7 @@ import ResellerBalances from '@/app/(main)/components/ResellerBalances';
 import ResellerPayments from '@/app/(main)/components/ResellerPayment';
 import ResellerTransactions from '@/app/(main)/components/ResellerTransaction';
 import ResellerSubResellers from '@/app/(main)/components/ResellerSubResellers';
+import ResellerWallets from '@/app/(main)/components/ResellerWallets';
 
 // import { useRouter } from "next/router";
 
@@ -241,7 +242,7 @@ const ResellerDetailsPage = ({ params }: ResellerDetailsPageProps) => {
                     <div className="col-6 lg:col-6 xl:col-3">
                         <div className="card" style={{ maxHeight: '120px', backgroundImage: 'linear-gradient(to right, #dbeafe, #c7d2fe)' }}>
                             <span>
-                                {singleReseller.balance} {userInfo?.currency?.symbol}
+                                {singleReseller.balance}
                             </span>
                             <br />
                             <span>{t('RESELLER.VIEW.BALANCE')}</span>
@@ -298,8 +299,11 @@ const ResellerDetailsPage = ({ params }: ResellerDetailsPageProps) => {
                 </div>
 
                 <TabView>
-                    <TabPanel header={t('OVERVIEW')}>
+                    {/* <TabPanel header={t('OVERVIEW')}>
                         <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</p>
+                    </TabPanel> */}
+                    <TabPanel header={t('MENU.WALLETS')}>
+                        <ResellerWallets resellerId={Number(params.id)} />
                     </TabPanel>
                     <TabPanel header={t('DOCUMENTS')}>
                         <div className="grid">
@@ -364,6 +368,9 @@ const ResellerDetailsPage = ({ params }: ResellerDetailsPageProps) => {
                     <TabPanel header={t('PAYMENTS')}>
                         <ResellerPayments resellerId={Number(params.id)} />
                     </TabPanel>
+                    {/* <TabPanel header={t('MENU.WALLETS')}>
+                        <ResellerWallets resellerId={Number(params.id)} />
+                    </TabPanel> */}
                 </TabView>
                 {/* Change Password Dialog */}
                 <Dialog

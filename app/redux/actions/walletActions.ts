@@ -280,7 +280,7 @@ export const _createWallet = (
         });
 
         // Refetch wallets to get updated list
-        dispatch(_fetchResellerWallets(resellerId, toast, t));
+        //dispatch(_fetchResellerWallets(resellerId, toast, t));
 
     } catch (error: any) {
         dispatch({

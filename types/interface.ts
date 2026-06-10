@@ -271,6 +271,7 @@ export interface Reseller {
     afg_custom_recharge_adjust_type: string;
     afg_custom_recharge_adjust_mode: string;
     afg_custom_recharge_adjust_value: number;
+    wallets?: Wallet[] | null
 }
 
 export interface User {
@@ -471,7 +472,8 @@ export interface Balance {
     payment_date?: string,
     performed_by_name?: string | null,
     status?: string | null,
-    is_reseller_loan_request?: string | null
+    is_reseller_loan_request?: string | null,
+    wallet?: Wallet | null
 }
 
 export interface Payment {
@@ -495,6 +497,7 @@ export interface Payment {
     payment_image?: string | null,
     extra_image_1?: string | null,
     extra_image_2?: string | null
+    wallet?: Wallet | null
 }
 
 export interface Roles {

@@ -760,7 +760,7 @@ const PaymentPage = () => {
         });
     };
 
-    
+
         const [resellerBalance, setResellerBalance] = useState<any>(null);
         const [resellerPayment, setResellerPayment] = useState<any>(null);
         const [resellerLoan, setResellerLoan] = useState<any>(null);
@@ -768,16 +768,16 @@ const PaymentPage = () => {
         useEffect(() => {
             if (payment.reseller) {
                 const formattedCurrency = payment.currency?.code || '';
-    
+
                 const resellerBalanceValue = Number(payment.reseller?.balance ?? 0);
                 const totalSent = Number(payment.reseller?.total_balance_sent ?? 0);
                 const totalReceived = Number(payment.reseller?.total_payments_received ?? 0);
                 const paymentDiff = totalSent - totalReceived;
-    
+
                 const totalPayments = Number(payment?.reseller?.total_payments_received) || 0;
                 const totalBalance = Number(payment?.reseller?.total_balance_sent) || 0;
                 const availablePaymentAmount = totalPayments - totalBalance;
-    
+
                 setResellerBalance(`${resellerBalanceValue} ${formattedCurrency}`);
                 //setResellerPayment(`${paymentDiff > 0 ? paymentDiff : 0} ${formattedCurrency}`);
                 setResellerPayment(`${availablePaymentAmount > 0 ? availablePaymentAmount : 0} ${formattedCurrency}`)
@@ -859,7 +859,7 @@ const PaymentPage = () => {
                     />
 
                     <Dialog visible={paymentDialog} style={{ width: '900px', padding: '5px'  }} header={t('PAYMENT.DETAILS.TITLE')} modal className="p-fluid" footer={paymentDialogFooter} onHide={hideDialog}>
-                        
+
                         {resellerBalance !== null && resellerPayment !== null && (
                             <div
                                 className="flex flex-wrap justify-between items-center"
@@ -889,7 +889,7 @@ const PaymentPage = () => {
                                 </div>
                             </div>
                         )}
-                        
+
                         <div className="card flex  flex-wrap p-fluid mt-3 gap-4">
                             <div className=" flex-1 col-12 lg:col-6">
                                 <div className="field">
@@ -1042,7 +1042,7 @@ const PaymentPage = () => {
                                         {t('PAYMENT.FORM.INPUT.CURRENCY')}
                                     </label>
                                     <Dropdown
-                                        disabled
+                                        // disabled
                                         id="currency"
                                         value={payment.currency}
                                         options={currencies}

@@ -376,7 +376,7 @@ const BalancePage = () => {
         return (
             <>
                 <span className="p-column-title">Amount</span>
-                {rowData.amount}
+                {rowData.wallet?.balance}
             </>
         );
     };
@@ -385,7 +385,7 @@ const BalancePage = () => {
         return (
             <>
                 <span className="p-column-title">Currency</span>
-                {rowData.currency?.code}
+                {rowData.wallet?.currency?.code}
             </>
         );
     };
@@ -885,7 +885,7 @@ const BalancePage = () => {
                                     <div className="field">
                                         <label htmlFor="currency_id">{t('BALANCE.FORM.INPUT.CURRENCY')} *</label>
                                         <Dropdown
-                                            disabled
+                                            // disabled
                                             id="currency_id"
                                             value={balance.currency_id}
                                             options={currencies}

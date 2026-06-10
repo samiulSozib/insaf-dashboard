@@ -237,66 +237,106 @@ const ResellerDetailsPage = ({ params }: ResellerDetailsPageProps) => {
                         </div>
                     </div>
                 </div>
-
-                <div className="grid mt-2">
-                    <div className="col-6 lg:col-6 xl:col-3">
-                        <div className="card" style={{ maxHeight: '120px', backgroundImage: 'linear-gradient(to right, #dbeafe, #c7d2fe)' }}>
-                            <span>
-                                {singleReseller.balance}
+<div className="grid mt-2">
+    {/* Row 1: Balance, Payment, Available Balance - 3 cards in a row on desktop, stacked on mobile */}
+    <div className="col-12 lg:col-4">
+        <div className="card" style={{ backgroundImage: 'linear-gradient(to right, #dbeafe, #c7d2fe)' }}>
+            <div className="font-bold mb-2 text-base">{t('RESELLER.VIEW.BALANCE')}</div>
+            <div className="grid">
+                {singleReseller.wallets?.map((wallet: any, index: number) => (
+                    <div key={index} className="col-6 sm:col-3 lg:col-6 mb-1">
+                        <div className="flex justify-content-between align-items-center">
+                            <span className="text-sm font-semibold">{wallet.currency_code}:</span>
+                            <span className="text-green-600 font-bold text-sm">
+                                {parseFloat(wallet.balance).toLocaleString()}
                             </span>
-                            <br />
-                            <span>{t('RESELLER.VIEW.BALANCE')}</span>
+                            {wallet.is_default && <i className="pi pi-star-fill text-yellow-500 text-xs ml-1" />}
                         </div>
                     </div>
+                ))}
+            </div>
+        </div>
+    </div>
 
-                    <div className="col-6 lg:col-6 xl:col-3">
-                        <div className="card" style={{ maxHeight: '120px', backgroundImage: 'linear-gradient(to right, #f3e8ff, #fbcfe8)' }}>
-                            <span>{singleReseller.today_orders}</span>
-                            <br />
-                            <span>{t('RESELLER.VIEW.TODAYORDER')}</span>
+    <div className="col-12 lg:col-4">
+        <div className="card" style={{ backgroundImage: 'linear-gradient(to right, #f3e8ff, #fbcfe8)' }}>
+            <div className="font-bold mb-2 text-base">{t('WALLETS.PAYMENT')}</div>
+            <div className="grid">
+                {singleReseller.wallets?.map((wallet: any, index: number) => (
+                    <div key={index} className="col-6 sm:col-3 lg:col-6 mb-1">
+                        <div className="flex justify-content-between align-items-center">
+                            <span className="text-sm font-semibold">{wallet.currency_code}:</span>
+                            <span className="text-orange-500 font-bold text-sm">
+                                {parseFloat(wallet.payment).toLocaleString()}
+                            </span>
                         </div>
                     </div>
+                ))}
+            </div>
+        </div>
+    </div>
 
-                    <div className="col-6 lg:col-6 xl:col-3">
-                        <div className="card" style={{ maxHeight: '120px', backgroundImage: 'linear-gradient(to right, #d1fae5, #99f6e4)' }}>
-                            <span>{singleReseller.total_orders}</span>
-                            <br />
-                            <span>{t('RESELLER.VIEW.TOTALORDER')}</span>
+    <div className="col-12 lg:col-4">
+        <div className="card" style={{ backgroundImage: 'linear-gradient(to right, #d1fae5, #99f6e4)' }}>
+            <div className="font-bold mb-2 text-base">{t('WALLETS.AVAILABLE_BALANCE')}</div>
+            <div className="grid">
+                {singleReseller.wallets?.map((wallet: any, index: number) => (
+                    <div key={index} className="col-6 sm:col-3 lg:col-6 mb-1">
+                        <div className="flex justify-content-between align-items-center">
+                            <span className="text-sm font-semibold">{wallet.currency_code}:</span>
+                            <span className="text-blue-600 font-bold text-sm">
+                                {parseFloat(wallet.available_balance).toLocaleString()}
+                            </span>
                         </div>
                     </div>
+                ))}
+            </div>
+        </div>
+    </div>
 
-                    <div className="col-6 lg:col-6 xl:col-3">
-                        <div className="card" style={{ maxHeight: '120px', backgroundImage: 'linear-gradient(to right, #fef9c3, #fed7aa)' }}>
-                            <span>{singleReseller.today_sale}</span>
-                            <br />
-                            <span>{t('RESELLER.VIEW.TODAYSALE')}</span>
-                        </div>
-                    </div>
+    {/* Row 2: Statistics Cards - 4 per row on desktop, 2 per row on mobile */}
+    <div className="col-6 sm:col-4 lg:col-3 mt-3">
+        <div className="card text-center" style={{ backgroundImage: 'linear-gradient(to right, #fef9c3, #fed7aa)' }}>
+            <div className="text-2xl sm:text-3xl font-bold">{singleReseller.today_orders || 0}</div>
+            <div className="text-sm sm:text-base mt-1">{t('RESELLER.VIEW.TODAYORDER')}</div>
+        </div>
+    </div>
 
-                    <div className="col-6 lg:col-6 xl:col-3">
-                        <div className="card" style={{ maxHeight: '120px', backgroundImage: 'linear-gradient(to right, #fae8ff, #e9d5ff)' }}>
-                            <span>{singleReseller.total_sale}</span>
-                            <br />
-                            <span>{t('RESELLER.VIEW.TOTALSALE')}</span>
-                        </div>
-                    </div>
+    <div className="col-6 sm:col-4 lg:col-3 mt-3">
+        <div className="card text-center" style={{ backgroundImage: 'linear-gradient(to right, #fae8ff, #e9d5ff)' }}>
+            <div className="text-2xl sm:text-3xl font-bold">{singleReseller.total_orders || 0}</div>
+            <div className="text-sm sm:text-base mt-1">{t('RESELLER.VIEW.TOTALORDER')}</div>
+        </div>
+    </div>
 
-                    <div className="col-6 lg:col-6 xl:col-3">
-                        <div className="card" style={{ maxHeight: '120px', backgroundImage: 'linear-gradient(to right, #cffafe, #bfdbfe)' }}>
-                            <span>{singleReseller.today_profit}</span>
-                            <br />
-                            <span>{t('RESELLER.VIEW.TODAYPROFIT')}</span>
-                        </div>
-                    </div>
+    <div className="col-6 sm:col-4 lg:col-3 mt-3">
+        <div className="card text-center" style={{ backgroundImage: 'linear-gradient(to right, #cffafe, #bfdbfe)' }}>
+            <div className="text-2xl sm:text-3xl font-bold">{singleReseller.today_sale || 0}</div>
+            <div className="text-sm sm:text-base mt-1">{t('RESELLER.VIEW.TODAYSALE')}</div>
+        </div>
+    </div>
 
-                    <div className="col-6 lg:col-6 xl:col-3">
-                        <div className="card" style={{ maxHeight: '120px', backgroundImage: 'linear-gradient(to right, #e0e7ff, #e9d5ff)' }}>
-                            <span>{singleReseller.total_profit}</span>
-                            <br />
-                            <span>{t('RESELLER.VIEW.TOTALPROFIT')}</span>
-                        </div>
-                    </div>
-                </div>
+    <div className="col-6 sm:col-4 lg:col-3 mt-3">
+        <div className="card text-center" style={{ backgroundImage: 'linear-gradient(to right, #e0e7ff, #e9d5ff)' }}>
+            <div className="text-2xl sm:text-3xl font-bold">{singleReseller.total_sale || 0}</div>
+            <div className="text-sm sm:text-base mt-1">{t('RESELLER.VIEW.TOTALSALE')}</div>
+        </div>
+    </div>
+
+    <div className="col-6 sm:col-4 lg:col-3 mt-3">
+        <div className="card text-center" style={{ backgroundImage: 'linear-gradient(to right, #d1fae5, #a7f3d0)' }}>
+            <div className="text-2xl sm:text-3xl font-bold">{singleReseller.today_profit || 0}</div>
+            <div className="text-sm sm:text-base mt-1">{t('RESELLER.VIEW.TODAYPROFIT')}</div>
+        </div>
+    </div>
+
+    <div className="col-6 sm:col-4 lg:col-3 mt-3">
+        <div className="card text-center" style={{ backgroundImage: 'linear-gradient(to right, #fce7f3, #fbcfe8)' }}>
+            <div className="text-2xl sm:text-3xl font-bold">{singleReseller.total_profit || 0}</div>
+            <div className="text-sm sm:text-base mt-1">{t('RESELLER.VIEW.TOTALPROFIT')}</div>
+        </div>
+    </div>
+</div>
 
                 <TabView>
                     {/* <TabPanel header={t('OVERVIEW')}>

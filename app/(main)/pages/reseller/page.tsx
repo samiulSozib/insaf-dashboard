@@ -534,77 +534,110 @@ const ResellerPage = () => {
         );
     };
 
-    const balanceBodyTemplate = (rowData: Reseller) => {
-        return (
-            <>
-                <span className="p-column-title">Balance</span>
-                <span style={{ color: 'green' }}>{rowData.balance}</span>
-            </>
-        );
-    };
+const balanceBodyTemplate = (rowData: Reseller) => {
+    const wallets = rowData.wallets || [];
+    return (
+        <>
+            <span className="p-column-title">{t('WALLETS.BALANCE')}</span>
+            <div className="flex flex-column gap-1">
+                {wallets.map((wallet: any, index: number) => (
+                    <div key={index} className="flex justify-content-between align-items-center gap-2">
+                        <span className="font-bold text-sm">{wallet.currency_code}:</span>
+                        <span style={{ color: 'green' }}>
+                            {parseFloat(wallet.balance).toLocaleString()}
+                        </span>
+                    </div>
+                ))}
+            </div>
+        </>
+    );
+};
 
-    const totalPaymentBodyTemplate = (rowData: Reseller) => {
-        return (
-            <>
-                <span className="p-column-title">Total Payment</span>
-                {rowData.total_payments_received}
-            </>
-        );
-    };
+const totalPaymentBodyTemplate = (rowData: Reseller) => {
+    const wallets = rowData.wallets || [];
+    return (
+        <>
+            <span className="p-column-title">{t('WALLETS.PAYMENT')}</span>
+            <div className="flex flex-column gap-1">
+                {wallets.map((wallet: any, index: number) => (
+                    <div key={index} className="flex justify-content-between align-items-center gap-2">
+                        <span className="font-bold text-sm">{wallet.currency_code}:</span>
+                        <span style={{ color: '#F59E0B' }}>
+                            {parseFloat(wallet.payment).toLocaleString()}
+                        </span>
+                    </div>
+                ))}
+            </div>
+        </>
+    );
+};
 
-    const totalBalanceSentBodyTemplate = (rowData: Reseller) => {
-        return (
-            <>
-                <span className="p-column-title">Total Balance Sent</span>
-                {rowData.total_balance_sent}
-            </>
-        );
-    };
+const totalBalanceSentBodyTemplate = (rowData: Reseller) => {
+    // This is total balance sent across all wallets (aggregated)
+    return (
+        <>
+            <span className="p-column-title">{t('RESELLER.TABLE.COLUMN.TOTAL_BALANCE')}</span>
+            <span>{(rowData.total_balance_sent || 0).toLocaleString()}</span>
+        </>
+    );
+};
 
-    const totalEarningBalanceBodyTemplate = (rowData: Reseller) => {
-        return (
-            <>
-                <span className="p-column-title">Total Earning Balance</span>
-                {rowData.total_earning_balance}
-            </>
-        );
-    };
+const totalEarningBalanceBodyTemplate = (rowData: Reseller) => {
+    return (
+        <>
+            <span className="p-column-title">{t('TOTAL_EARNING_BALANCE')}</span>
+            <span>{(rowData.total_earning_balance )}</span>
+        </>
+    );
+};
 
-    const availablePaymentBodyTemplate = (rowData: Reseller) => {
-        const totalPayments = Number(rowData?.total_payments_received) || 0;
-        const totalBalance = Number(rowData?.total_balance_sent) || 0;
-        const availablePaymentAmount = totalPayments - totalBalance;
+const availablePaymentBodyTemplate = (rowData: Reseller) => {
+    const wallets = rowData.wallets || [];
+    return (
+        <>
+            <span className="p-column-title">{t('WALLETS.AVAILABLE_BALANCE')}</span>
+            <div className="flex flex-column gap-1">
+                {wallets.map((wallet: any, index: number) => (
+                    <div key={index} className="flex justify-content-between align-items-center gap-2">
+                        <span className="font-bold text-sm">{wallet.currency_code}:</span>
+                        <span style={{ color: '#3B82F6' }}>
+                            {parseFloat(wallet.available_balance).toLocaleString()}
+                        </span>
+                    </div>
+                ))}
+            </div>
+        </>
+    );
+};
 
-        return (
-            <>
-                <span className="p-column-title">Available Payment</span>
-                {availablePaymentAmount > 0 ? availablePaymentAmount : 0}
-            </>
-        );
-    };
+const loanAmountBodyTemplate = (rowData: Reseller) => {
+    const wallets = rowData.wallets || [];
+    return (
+        <>
+            <span className="p-column-title">{t('WALLETS.LOAN_BALANCE')}</span>
+            <div className="flex flex-column gap-1">
+                {wallets.map((wallet: any, index: number) => (
+                    <div key={index} className="flex justify-content-between align-items-center gap-2">
+                        <span className="font-bold text-sm">{wallet.currency_code}:</span>
+                        <span style={{ color: 'red' }}>
+                            {parseFloat(wallet.loan_balance).toLocaleString()}
+                        </span>
+                    </div>
+                ))}
+            </div>
+        </>
+    );
+};
 
-    const loanAmountBodyTemplate = (rowData: Reseller) => {
-        const total_payments_received = Number(rowData.total_payments_received);
-        const total_balance_sent = Number(rowData.total_balance_sent);
-        const loanAmount = total_balance_sent - total_payments_received;
-        return (
-            <>
-                <span className="p-column-title">Loan Amount</span>
-                <span style={{ color: 'red' }}>{loanAmount > 0 ? loanAmount : 0}</span>
-            </>
-        );
-    };
-
-    const preferredCurrencyBodyTemplate = (rowData: Reseller) => {
-        const currency = typeof rowData.code === 'object' && rowData.code !== null ? rowData.code.code : rowData.code;
-
-        return (
-            <>
-                <span className="p-column-title">Preferred Currency</span>
-                {currency || '-'}
-            </>
-        );
-    };
+const preferredCurrencyBodyTemplate = (rowData: Reseller) => {
+    const currency = typeof rowData.code === 'object' && rowData.code !== null ? rowData.code.code : rowData.code;
+    return (
+        <>
+            <span className="p-column-title">{t('MENU.CURRENCY')}</span>
+            {currency || '-'}
+        </>
+    );
+};
 
     const countryBodyTemplate = (rowData: Reseller) => {
         return (

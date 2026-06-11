@@ -213,6 +213,32 @@ export interface MoneyTransaction {
     order?: Order;
 }
 
+export interface Wallet {
+    id: number;
+    reseller_id: string;
+    currency_id: string;
+    balance: string;
+    payment: string;
+    loan_balance: string;
+    total_payments_received: string;
+    total_balance_sent: string;
+    total_earning_balance: string;
+    total_hawala_sent: string;
+    total_hawala_received: string;
+    daily_hawala_limit: string | null;
+    monthly_hawala_limit: string | null;
+    last_hawala_date: string | null;
+    is_default: boolean;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+    reseller: Reseller;
+    currency: Currency;
+    currency_code?: string;
+    currency_symbol?: string;
+    total_earnings?: string;
+}
+
 export interface Reseller {
     id: number;
     user_id: number;
@@ -1198,28 +1224,7 @@ export interface WalletDetails {
     created_at: string;
 }
 
-export interface Wallet {
-    id: number;
-    reseller_id: string;
-    currency_id: string;
-    balance: string;
-    payment: string;
-    loan_balance: string;
-    total_payments_received: string;
-    total_balance_sent: string;
-    total_earning_balance: string;
-    total_hawala_sent: string;
-    total_hawala_received: string;
-    daily_hawala_limit: string | null;
-    monthly_hawala_limit: string | null;
-    last_hawala_date: string | null;
-    is_default: boolean;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
-    reseller: Reseller;
-    currency: Currency;
-}
+
 
 export interface WalletStatistics {
     summary: {

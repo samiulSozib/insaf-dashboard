@@ -27,6 +27,7 @@ import {
 } from '@/app/redux/actions/walletActions';
 import { Currency, ResellerWallet } from '@/types/interface';
 import { _fetchCurrencies } from '@/app/redux/actions/currenciesActions';
+import { Badge } from 'primereact/badge';
 
 interface ResellerWalletsProps {
     resellerId: number;
@@ -292,26 +293,28 @@ const ResellerWallets = ({ resellerId }: ResellerWalletsProps) => {
     };
 
     const walletTypeBodyTemplate = (rowData: ResellerWallet) => {
+        let severity: 'success' | 'info' | 'warning' | 'danger' | null = null;
         let typeText = '';
-        let typeClass = '';
 
         if (rowData.is_current_active) {
             typeText = t('WALLETS.ACTIVE_WALLET');
-            typeClass = 'bg-green-500';
+            severity = 'success';
         } else if (rowData.is_default) {
             typeText = t('WALLETS.DEFAULT_WALLET');
-            typeClass = 'bg-blue-500';
+            severity = 'info';
         } else {
             typeText = t('WALLETS.SECONDARY_WALLET');
-            typeClass = 'bg-gray-500';
+            severity = null; // Use null for gray/default styling
         }
 
         return (
             <>
                 <span className="p-column-title">{t('WALLETS.TYPE')}</span>
-                <span className={`inline-block px-2 py-1 rounded text-white text-sm ${typeClass}`}>
-                    {typeText}
-                </span>
+                <Badge
+                    value={typeText}
+                    severity={severity}
+                    className="w-full justify-content-center"
+                />
             </>
         );
     };

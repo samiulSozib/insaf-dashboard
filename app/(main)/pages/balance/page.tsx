@@ -978,7 +978,7 @@ const BalancePage = () => {
                                     <div className="field">
                                         <label htmlFor="payment_currency_id">{t('BALANCE.FORM.INPUT.PAYMENTCURRENCY')}</label>
                                         <Dropdown
-                                            disabled
+                                            // disabled
                                             id="payment_currency_id"
                                             value={balance.payment_currency_id}
                                             options={currencies}

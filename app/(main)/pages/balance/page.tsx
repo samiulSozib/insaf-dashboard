@@ -620,9 +620,26 @@ const BalancePage = () => {
         </>
     );
 
-    useEffect(() => {
-        const currencyCode = balance?.reseller?.code || '';
+    // useEffect(() => {
+    //     const currencyCode = balance?.reseller?.code || '';
 
+    //     const selectedCurrency = currencies.find((currency: Currency) => currency.code === currencyCode);
+
+    //     if (selectedCurrency) {
+    //         setBalance((prev) => ({
+    //             ...prev,
+    //             currency_id: selectedCurrency.id,
+    //             currency: selectedCurrency,
+    //             payment_currency_id: selectedCurrency.id
+    //         }));
+    //     }
+    // }, [balance?.reseller?.code, currencies, balance]);
+
+    useEffect(() => {
+    // Get the currency from the selected reseller's code
+    const currencyCode = balance?.reseller?.code;
+
+    if (currencyCode && typeof currencyCode === 'string') {
         const selectedCurrency = currencies.find((currency: Currency) => currency.code === currencyCode);
 
         if (selectedCurrency) {
@@ -633,7 +650,8 @@ const BalancePage = () => {
                 payment_currency_id: selectedCurrency.id
             }));
         }
-    }, [balance?.reseller?.code, currencies, balance]);
+    }
+}, [balance?.reseller, currencies]);
 
     const [resellerBalance, setResellerBalance] = useState<any>(null);
     const [resellerPayment, setResellerPayment] = useState<any>(null);

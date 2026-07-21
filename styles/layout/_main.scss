@@ -99,3 +99,20 @@ a {
     margin-right: 8px;
 }
 
+
+
+//
+/* Even rows */
+.datatable-responsive .p-datatable-tbody > tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+/* Odd rows */
+.datatable-responsive .p-datatable-tbody > tr:nth-child(odd) {
+    background-color: #e9dada;
+}
+
+/* Hover */
+.datatable-responsive .p-datatable-tbody > tr:hover {
+    background-color: #e0f2fe !important;
+}

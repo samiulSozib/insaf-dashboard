@@ -544,7 +544,7 @@ const ResellerPage = () => {
                     {wallets.map((wallet: any, index: number) => (
                         <Badge
                             key={index}
-                            value={`${wallet.currency_code}: ${parseFloat(wallet.balance).toLocaleString()}`}
+                            value={`${wallet.currency_code}:${parseFloat(wallet.balance).toLocaleString()}`}
                             severity="success"
                             className="w-full justify-content-center mb-1"
                         />
@@ -570,7 +570,7 @@ const ResellerPage = () => {
                         return (
                             <Badge
                                 key={index}
-                                value={`${wallet.currency_code}: ${availablePaymentAmount > 0 ? availablePaymentAmount.toLocaleString() : 0}`}
+                                value={`${wallet.currency_code}:${availablePaymentAmount > 0 ? availablePaymentAmount.toLocaleString() : 0}`}
                                 severity="info"
                                 className="w-full justify-content-center mb-1"
                             />
@@ -590,7 +590,7 @@ const ResellerPage = () => {
                     {wallets.map((wallet: any, index: number) => (
                         <Badge
                             key={index}
-                            value={`${wallet.currency_code}: ${parseFloat(wallet.total_payments_received).toLocaleString()}`}
+                            value={`${wallet.currency_code}:${parseFloat(wallet.total_payments_received).toLocaleString()}`}
                             severity="warning"
                             className="w-full justify-content-center mb-1"
                         />
@@ -609,7 +609,7 @@ const ResellerPage = () => {
                     {wallets.map((wallet: any, index: number) => (
                         <Badge
                             key={index}
-                            value={`${wallet.currency_code}: ${parseFloat(wallet.total_balance_sent).toLocaleString()}`}
+                            value={`${wallet.currency_code}:${wallet.total_balance_sent}`}
                             severity="success"
                             className="w-full justify-content-center mb-1"
                         />
@@ -628,7 +628,7 @@ const ResellerPage = () => {
                     {wallets.map((wallet: any, index: number) => (
                         <Badge
                             key={index}
-                            value={`${wallet.currency_code}: ${parseFloat(wallet.total_earnings).toLocaleString()}`}
+                            value={`${wallet.currency_code}:${parseFloat(wallet.total_earnings).toLocaleString()}`}
                             severity="danger"
                             className="w-full justify-content-center mb-1"
                         />
@@ -647,14 +647,20 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
             <span className="p-column-title">{t('WALLETS.LOAN_BALANCE')}</span>
             <div className="flex flex-column gap-1">
                 {wallets.map((wallet: any, index: number) => {
-                    const total_payments_received = Number(wallet.total_payments_received);
-                    const total_balance_sent = Number(wallet.total_balance_sent) ;
-                    const loanAmount = total_balance_sent - total_payments_received;
+                    const total_payments_received = parseFloat(wallet.total_payments_received);
+                    const total_balance_sent = parseFloat(wallet.total_balance_sent) ;
+                    let loanAmount = total_balance_sent - total_payments_received;
+
+                    if(loanAmount<0){
+                        loanAmount=0
+                    }
 
                     return (
                         <Badge
                             key={index}
-                            value={`${wallet.currency_code}: ${loanAmount > 0 ? loanAmount.toLocaleString() : 0}`}
+                            // value={`${wallet.currency_code}: ${loanAmount > 0 ? loanAmount : 0}`}
+                            value={`${wallet.currency_code}:${loanAmount}`}
+
                             severity="danger"
                             className="w-full justify-content-center mb-1"
                         />

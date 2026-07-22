@@ -87,12 +87,44 @@ const BalancePage = () => {
     const [verifyDialog, setVerifyDialog] = useState(false);
     const [rejectDialog, setRejectDialog] = useState(false);
 
+    // useEffect(() => {
+    //     dispatch(_fetchBalances(1, searchTag, activeFilters));
+    //     dispatch(_fetchCurrencies());
+    //     dispatch(_fetchResellers(1, '', '', 10000));
+    //     dispatch(_fetchPaymentMethods());
+    // }, [dispatch, searchTag, activeFilters]);
+
+        // 1. Always fetch balances when search or filters change
     useEffect(() => {
         dispatch(_fetchBalances(1, searchTag, activeFilters));
-        dispatch(_fetchCurrencies());
-        dispatch(_fetchResellers(1, '', '', 10000));
-        dispatch(_fetchPaymentMethods());
     }, [dispatch, searchTag, activeFilters]);
+
+    // 2. Fetch dropdown data when add/edit dialog opens
+    useEffect(() => {
+        if (balanceDialog) {
+            // Fetch all required dropdown data
+            if (currencies.length === 0) {
+                dispatch(_fetchCurrencies());
+            }
+            if (resellers.length === 0) {
+                dispatch(_fetchResellers(1, '', '', 10000));
+            }
+            if (paymentMethods.length === 0) {
+                dispatch(_fetchPaymentMethods());
+            }
+        }
+    }, [balanceDialog, dispatch, currencies.length, resellers.length, paymentMethods.length]);
+
+    // 3. Fetch filter dropdown data when filter dialog opens (if needed)
+    useEffect(() => {
+        if (filterDialogVisible) {
+            // Only need currencies for filter dropdown (if you add currency filter later)
+            if (currencies.length === 0) {
+                dispatch(_fetchCurrencies());
+            }
+            // Transaction types are static - no API call needed
+        }
+    }, [filterDialogVisible, dispatch, currencies.length]);
 
     useEffect(() => {
         const timer = setTimeout(() => {

@@ -125,14 +125,34 @@ const ResellerPage = () => {
     const [refreshing, setRefreshing] = useState(false);
     const filterRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
+    // useEffect(() => {
+    //     dispatch(_fetchResellers(1, searchTag, activeFilters));
+    //     dispatch(_fetchCountries());
+    //     dispatch(_fetchDistricts());
+    //     dispatch(_fetchProvinces());
+    //     dispatch(_fetchCurrencies());
+    //     dispatch(_fetchResellerGroups());
+    // }, [dispatch, searchTag, activeFilters]);
+
+        useEffect(() => {
         dispatch(_fetchResellers(1, searchTag, activeFilters));
+        // dispatch(_fetchCountries());
+        // dispatch(_fetchDistricts());
+        // dispatch(_fetchProvinces());
+        // dispatch(_fetchCurrencies());
+        // dispatch(_fetchResellerGroups());
+    }, [dispatch, searchTag, activeFilters]);
+
+useEffect(() => {
+    if (resellerDialog) {
+        // Fetch all required data for dropdowns
         dispatch(_fetchCountries());
         dispatch(_fetchDistricts());
         dispatch(_fetchProvinces());
         dispatch(_fetchCurrencies());
         dispatch(_fetchResellerGroups());
-    }, [dispatch, searchTag, activeFilters]);
+    }
+}, [resellerDialog, dispatch]);
 
     // Add this useEffect for click outside detection
     useEffect(() => {

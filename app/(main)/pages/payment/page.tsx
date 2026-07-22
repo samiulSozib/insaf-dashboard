@@ -99,12 +99,46 @@ const PaymentPage = () => {
 
 
 
+    // useEffect(() => {
+    //     dispatch(_fetchPayments(1, searchTag, activeFilters));
+    //     dispatch(_fetchResellers(1, '', '', 10000));
+    //     dispatch(_fetchPaymentMethods());
+    //     dispatch(_fetchCurrencies());
+    // }, [dispatch, searchTag, activeFilters]);
+
+       // 1. Always fetch payments when search or filters change
     useEffect(() => {
         dispatch(_fetchPayments(1, searchTag, activeFilters));
-        dispatch(_fetchResellers(1, '', '', 10000));
-        dispatch(_fetchPaymentMethods());
-        dispatch(_fetchCurrencies());
     }, [dispatch, searchTag, activeFilters]);
+
+    // 2. Fetch dropdown data when add/edit dialog opens
+    useEffect(() => {
+        if (paymentDialog) {
+            // Fetch all required dropdown data
+            if (resellers.length === 0) {
+                dispatch(_fetchResellers(1, '', '', 10000));
+            }
+            if (paymentMethods.length === 0) {
+                dispatch(_fetchPaymentMethods());
+            }
+            if (currencies.length === 0) {
+                dispatch(_fetchCurrencies());
+            }
+        }
+    }, [paymentDialog, dispatch, resellers.length, paymentMethods.length, currencies.length]);
+
+    // 3. Fetch filter dropdown data when filter dialog opens
+    useEffect(() => {
+        if (filterDialogVisible) {
+            // Only need payment methods for filter dropdown
+            if (paymentMethods.length === 0) {
+                dispatch(_fetchPaymentMethods());
+            }
+            if (currencies.length === 0) {
+                dispatch(_fetchCurrencies());
+            }
+        }
+    }, [filterDialogVisible, dispatch, paymentMethods.length, currencies.length]);
 
     useEffect(() => {
         const timer = setTimeout(() => {

@@ -1,5 +1,3 @@
-
-
 /* eslint-disable @next/next/no-img-element */
 'use client';
 import { Button } from 'primereact/button';
@@ -19,7 +17,6 @@ import { ProgressBar } from 'primereact/progressbar';
 import { FileUpload } from 'primereact/fileupload';
 import withAuth from '../../authGuard';
 import { useTranslation } from 'react-i18next';
-import { customCellStyleImage } from '../../utilities/customRow';
 import i18n from '@/i18n';
 import { isRTL } from '../../utilities/rtlUtil';
 import { InputSwitch } from 'primereact/inputswitch';
@@ -31,10 +28,10 @@ import { TabView, TabPanel } from 'primereact/tabview';
 import { Sidebar } from 'primereact/sidebar';
 import { _fetchCurrencies } from '@/app/redux/actions/currenciesActions';
 import {
-  _fetchSupportContacts,
-  _addSupportContact,
-  _editSupportContact,
-  _deleteSupportContact
+    _fetchSupportContacts,
+    _addSupportContact,
+    _editSupportContact,
+    _deleteSupportContact
 } from '@/app/redux/actions/supportContactActions';
 import { _fetchProviders } from '@/app/redux/actions/providerActions';
 
@@ -96,8 +93,9 @@ const emptySettings: AppSettings = {
     afg_custom_recharge_selling_price_adjust_mode: "percentage",
     afg_custom_recharge_selling_price_adjust_value: 0,
     setaragan_admin_buying_price_percentage: 0,
-    custom_recharge_api_provider_id: null, // Add this line
-
+    custom_recharge_api_provider_id: null,
+    wallet_deduction_mode: "bundle_currency_wallet",
+    bundle_price_display_mode: "preferred_currency",
 };
 
 const emptySupportContact: SupportContacts = {
@@ -135,9 +133,7 @@ const AppSettingsPage = () => {
     const { loading: supportContactsLoading, supportContacts: reduxSupportContacts } = useSelector((state: any) => state.supportContactReducer);
     const { t } = useTranslation();
     const { currencies } = useSelector((state: any) => state.currenciesReducer);
-    const { providers, pagination } = useSelector((state: any) => state.providerReducer);
-
-
+    const { providers } = useSelector((state: any) => state.providerReducer);
 
     useEffect(() => {
         dispatch(fetchAppSettings());
@@ -145,8 +141,6 @@ const AppSettingsPage = () => {
         dispatch(_fetchSupportContacts());
         dispatch(_fetchProviders());
 
-
-        // Check if device is mobile
         const checkIsMobile = () => {
             setIsMobile(window.innerWidth <= 768);
         };
@@ -166,21 +160,19 @@ const AppSettingsPage = () => {
     }, [reduxSupportContacts]);
 
     useEffect(() => {
-    if (providers && providers.length > 0 && settings.custom_recharge_api_provider_id) {
-        console.log('Providers loaded:', providers);
-        console.log('Selected provider ID:', settings.custom_recharge_api_provider_id);
-        const found = providers.find((p: Provider) => p.id === settings.custom_recharge_api_provider_id);
-        console.log('Found provider:', found);
-    }
-}, [providers, settings.custom_recharge_api_provider_id]);
-
-
+        if (reduxSettings) {
+            setSettings({
+                ...reduxSettings,
+                wallet_deduction_mode: reduxSettings.wallet_deduction_mode || "bundle_currency_wallet",
+                bundle_price_display_mode: reduxSettings.bundle_price_display_mode || "preferred_currency",
+            });
+        }
+    }, [reduxSettings]);
 
     const selectedCurrency = currencies?.find((currency: Currency) =>
         currency.code === settings.default_currency
     );
 
-    // Update exchange rate when currency changes
     useEffect(() => {
         if (selectedCurrency && settings.default_currency) {
             setSettings(prev => ({
@@ -189,12 +181,6 @@ const AppSettingsPage = () => {
             }));
         }
     }, [settings.default_currency, selectedCurrency]);
-
-    useEffect(() => {
-        if (reduxSettings) {
-            setSettings(reduxSettings);
-        }
-    }, [reduxSettings]);
 
     const openSettings = () => {
         setSettingsDialog(true);
@@ -217,8 +203,14 @@ const AppSettingsPage = () => {
             });
             return;
         }
-        console.log(settings)
-        dispatch(updateAppSettings(settings, toast, t));
+
+        const settingsToSave = {
+            ...settings,
+            wallet_deduction_mode: settings.wallet_deduction_mode || "bundle_currency_wallet",
+            bundle_price_display_mode: settings.bundle_price_display_mode || "preferred_currency",
+        };
+
+        dispatch(updateAppSettings(settingsToSave, toast, t));
         setSettingsDialog(false);
         setSubmitted(false);
     };
@@ -318,17 +310,6 @@ const AppSettingsPage = () => {
             </div>
         );
     };
-
-    // Add this provider dropdown template function
-const providerDropdownTemplate = (option: Provider) => {
-    if (!option) return t('SELECT_PROVIDER');
-    return (
-        <div className="flex justify-content-between align-items-center">
-            <span>{option.name}</span>
-            <span className="text-sm text-500">{option.code}</span>
-        </div>
-    );
-};
 
     const renderSupportContactsTab = () => {
         return (
@@ -474,7 +455,7 @@ const providerDropdownTemplate = (option: Provider) => {
                                     onValueChange={(e) => setSettings({ ...settings, exchange_rate_usd_afn: e.value || 0 })}
                                     mode="decimal"
                                     minFractionDigits={4}
-                                    disabled={!settings.default_currency} // Disable if no currency selected
+                                    disabled={!settings.default_currency}
                                 />
                                 {selectedCurrency && (
                                     <small className="text-sm text-500">
@@ -482,7 +463,6 @@ const providerDropdownTemplate = (option: Provider) => {
                                     </small>
                                 )}
                             </div>
-
 
                             <div className="field">
                                 <label htmlFor="website_url" className="font-bold text-sm md:text-base">
@@ -1183,29 +1163,29 @@ const providerDropdownTemplate = (option: Provider) => {
                                 </small>
                             </div>
                             <div className="field">
-    <label htmlFor="custom_recharge_api_provider_id" className="font-bold text-sm md:text-base">
-        {t('APP_SETTINGS.CUSTOM_RECHARGE_API_PROVIDER')}
-    </label>
-    <Dropdown
-    value={settings.custom_recharge_api_provider_id ?? null}
-    options={providers}
-    onChange={(e) => {
-        setSettings(prev => ({
-            ...prev,
-            custom_recharge_api_provider_id: e.value ?? null
-        }));
-    }}
-    optionLabel="name"
-    optionValue="id"
-    placeholder="Select Provider"
-    className="w-full"
-    filter
-    showClear
-/>
-    <small className="text-sm text-500">
-        {t('APP_SETTINGS.CUSTOM_RECHARGE_API_PROVIDER_DESC')}
-    </small>
-</div>
+                                <label htmlFor="custom_recharge_api_provider_id" className="font-bold text-sm md:text-base">
+                                    {t('APP_SETTINGS.CUSTOM_RECHARGE_API_PROVIDER')}
+                                </label>
+                                <Dropdown
+                                    value={settings.custom_recharge_api_provider_id ?? null}
+                                    options={providers}
+                                    onChange={(e) => {
+                                        setSettings(prev => ({
+                                            ...prev,
+                                            custom_recharge_api_provider_id: e.value ?? null
+                                        }));
+                                    }}
+                                    optionLabel="name"
+                                    optionValue="id"
+                                    placeholder="Select Provider"
+                                    className="w-full"
+                                    filter
+                                    showClear
+                                />
+                                <small className="text-sm text-500">
+                                    {t('APP_SETTINGS.CUSTOM_RECHARGE_API_PROVIDER_DESC')}
+                                </small>
+                            </div>
                         </div>
 
                         <div className="col-12">
@@ -1237,6 +1217,78 @@ const providerDropdownTemplate = (option: Provider) => {
 
             case 'support-contacts':
                 return renderSupportContactsTab();
+
+            case 'wallet':
+                return (
+                    <div className="grid p-fluid">
+                        <div className="col-12">
+                            <div className="field">
+                                <label htmlFor="wallet_deduction_mode" className="font-bold text-sm md:text-base">
+                                    {t('APP_SETTINGS.WALLET_DEDUCTION_MODE')}
+                                </label>
+                                <Dropdown
+                                    id="wallet_deduction_mode"
+                                    value={settings.wallet_deduction_mode || "bundle_currency_wallet"}
+                                    options={[
+                                        { label: t('APP_SETTINGS.BUNDLE_CURRENCY_WALLET'), value: "bundle_currency_wallet" },
+                                        { label: t('APP_SETTINGS.SELECTED_WALLET_CONVERSION'), value: "selected_wallet_conversion" },
+                                        { label: t('APP_SETTINGS.RESELLER_CHOICE'), value: "reseller_choice" }
+                                    ]}
+                                    onChange={(e) => setSettings({
+                                        ...settings,
+                                        wallet_deduction_mode: e.value
+                                    })}
+                                    placeholder={t('APP_SETTINGS.SELECT_WALLET_DEDUCTION_MODE')}
+                                    className="w-full"
+                                    showClear
+                                />
+                                <small className="text-sm text-500">
+                                    {t('APP_SETTINGS.WALLET_DEDUCTION_MODE_DESC')}
+                                </small>
+                            </div>
+
+                            <div className="field">
+                                <label htmlFor="bundle_price_display_mode" className="font-bold text-sm md:text-base">
+                                    {t('APP_SETTINGS.BUNDLE_PRICE_DISPLAY_MODE')}
+                                </label>
+                                <Dropdown
+                                    id="bundle_price_display_mode"
+                                    value={settings.bundle_price_display_mode || "preferred_currency"}
+                                    options={[
+                                        { label: t('APP_SETTINGS.PREFERRED_CURRENCY'), value: "preferred_currency" },
+                                        { label: t('APP_SETTINGS.BUNDLE_CURRENCY'), value: "bundle_currency" }
+                                    ]}
+                                    onChange={(e) => setSettings({
+                                        ...settings,
+                                        bundle_price_display_mode: e.value
+                                    })}
+                                    placeholder={t('APP_SETTINGS.SELECT_BUNDLE_PRICE_DISPLAY_MODE')}
+                                    className="w-full"
+                                    showClear
+                                />
+                                <small className="text-sm text-500">
+                                    {t('APP_SETTINGS.BUNDLE_PRICE_DISPLAY_MODE_DESC')}
+                                </small>
+                            </div>
+
+                            <div className="field">
+                                <div className="p-3 border-1 surface-border border-round">
+                                    <p className="text-sm text-500 mb-2">
+                                        {t('APP_SETTINGS.WALLET_DEDUCTION_DESC')}
+                                    </p>
+                                    <ul className="text-sm text-500 m-0">
+                                        <li><strong>{t('APP_SETTINGS.BUNDLE_CURRENCY_WALLET')}:</strong> {t('APP_SETTINGS.BUNDLE_CURRENCY_WALLET_DESC')}</li>
+                                        <li><strong>{t('APP_SETTINGS.SELECTED_WALLET_CONVERSION')}:</strong> {t('APP_SETTINGS.SELECTED_WALLET_CONVERSION_DESC')}</li>
+                                        <li><strong>{t('APP_SETTINGS.RESELLER_CHOICE')}:</strong> {t('APP_SETTINGS.RESELLER_CHOICE_DESC')}</li>
+                                    </ul>
+                                    <p className="text-sm text-500 mt-2">
+                                        {t('APP_SETTINGS.BUNDLE_PRICE_DISPLAY_DESC')}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
 
             default:
                 return null;
@@ -1298,6 +1350,14 @@ const providerDropdownTemplate = (option: Provider) => {
                 className={`p-button-text ${activeTab === 'support-contacts' ? 'p-button-primary' : 'p-button-secondary'} text-sm md:text-base`}
                 onClick={() => {
                     setActiveTab('support-contacts');
+                    setMobileNavVisible(false);
+                }}
+            />
+            <Button
+                label={t('APP_SETTINGS.WALLET')}
+                className={`p-button-text ${activeTab === 'wallet' ? 'p-button-primary' : 'p-button-secondary'} text-sm md:text-base`}
+                onClick={() => {
+                    setActiveTab('wallet');
                     setMobileNavVisible(false);
                 }}
             />
@@ -1370,8 +1430,8 @@ const providerDropdownTemplate = (option: Provider) => {
                     >
                         <div className="card" style={{ padding: '20px', maxHeight: '60vh', overflowY: 'auto' }}>
                             <TabView
-                                activeIndex={['general', 'contact', 'branding', 'limits', 'integration', 'recharge', 'support-contacts'].indexOf(activeTab)}
-                                onTabChange={(e) => setActiveTab(['general', 'contact', 'branding', 'limits', 'integration', 'recharge', 'support-contacts'][e.index])}
+                                activeIndex={['general', 'contact', 'branding', 'limits', 'integration', 'recharge', 'support-contacts', 'wallet'].indexOf(activeTab)}
+                                onTabChange={(e) => setActiveTab(['general', 'contact', 'branding', 'limits', 'integration', 'recharge', 'support-contacts', 'wallet'][e.index])}
                             >
                                 <TabPanel header={t('APP_SETTINGS.GENERAL')}>
                                     {activeTab === 'general' && renderTabContent()}
@@ -1393,6 +1453,9 @@ const providerDropdownTemplate = (option: Provider) => {
                                 </TabPanel>
                                 <TabPanel header={t('SUPPORT_CONTACT.TITLE')}>
                                     {activeTab === 'support-contacts' && renderTabContent()}
+                                </TabPanel>
+                                <TabPanel header={t('APP_SETTINGS.WALLET')}>
+                                    {activeTab === 'wallet' && renderTabContent()}
                                 </TabPanel>
                             </TabView>
                         </div>

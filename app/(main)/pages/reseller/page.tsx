@@ -13,11 +13,10 @@ import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
 import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
 import { _fetchCountries } from '@/app/redux/actions/countriesActions';
-import { _fetchTelegramList } from '@/app/redux/actions/telegramActions';
 import { AppDispatch } from '@/app/redux/store';
 import { Country, Currency, District, Province, Reseller, ResellerGroup, Wallet } from '@/types/interface';
 import { ProgressBar } from 'primereact/progressbar';
-import { _addReseller, _changeResellerStatus, _deleteReseller, _editReseller, _fetchResellers, _getResellerById } from '@/app/redux/actions/resellerActions';
+import { _addReseller, _changeResellerStatus, _deleteReseller, _editReseller, _fetchResellers } from '@/app/redux/actions/resellerActions';
 import { FileUpload } from 'primereact/fileupload';
 import { Password } from 'primereact/password';
 import { _fetchDistricts } from '@/app/redux/actions/districtActions';
@@ -25,7 +24,6 @@ import { _fetchProvinces } from '@/app/redux/actions/provinceActions';
 import { _fetchCurrencies } from '@/app/redux/actions/currenciesActions';
 import withAuth from '../../authGuard';
 import { useTranslation } from 'react-i18next';
-import { resellerGroupReducer } from '@/app/redux/reducers/resellerGroupReducer';
 import { _fetchResellerGroups } from '@/app/redux/actions/resellerGroupActions';
 import { InputSwitch } from 'primereact/inputswitch';
 import { SplitButton } from 'primereact/splitbutton';
@@ -36,6 +34,8 @@ import i18n from '@/i18n';
 import { isRTL } from '../../utilities/rtlUtil';
 import { generateSubResellerExcelFile } from '../../utilities/generateExcel';
 import { Badge } from 'primereact/badge';
+import { fetchAppSettings } from '@/app/redux/actions/appSettingsActions';
+import { _fetchAllWallets } from '@/app/redux/actions/walletActions';
 
 const ResellerPage = () => {
     const emptyReseller: Reseller = {
@@ -90,7 +90,9 @@ const ResellerPage = () => {
         extra_optional_proof: '',
         afg_custom_recharge_adjust_type: 'decrease',
         afg_custom_recharge_adjust_mode: 'fixed',
-        afg_custom_recharge_adjust_value: 0
+        afg_custom_recharge_adjust_value: 0,
+        active_wallet_id: null,
+        preferred_wallet_deduction_mode: null,
     };
 
     const [resellerDialog, setResellerDialog] = useState(false);
@@ -104,12 +106,14 @@ const ResellerPage = () => {
     const toast = useRef<Toast>(null);
     const dt = useRef<DataTable<any>>(null);
     const dispatch = useDispatch<AppDispatch>();
-    const { resellers, loading, pagination, singleReseller } = useSelector((state: any) => state.resellerReducer);
+    const { resellers, loading, pagination } = useSelector((state: any) => state.resellerReducer);
     const { countries } = useSelector((state: any) => state.countriesReducer);
     const { districts } = useSelector((state: any) => state.districtReducer);
     const { provinces } = useSelector((state: any) => state.provinceReducer);
     const { currencies } = useSelector((state: any) => state.currenciesReducer);
     const { reseller_groups } = useSelector((state: any) => state.resellerGroupReducer);
+    const { settings: appSettings } = useSelector((state: any) => state.appSettingsReducer);
+    const { allWallets } = useSelector((state: any) => state.walletReducer);
     const { t } = useTranslation();
     const router = useRouter();
     const [searchTag, setSearchTag] = useState('');
@@ -118,43 +122,28 @@ const ResellerPage = () => {
         filter_status: null as string | null,
         filter_startdate: null as string | null,
         filter_enddate: null as string | null,
-        filter_has_loan: null as string | null // Add this line
-
+        filter_has_loan: null as string | null
     });
     const [activeFilters, setActiveFilters] = useState({});
-    const [refreshing, setRefreshing] = useState(false);
     const filterRef = useRef<HTMLDivElement>(null);
 
-    // useEffect(() => {
-    //     dispatch(_fetchResellers(1, searchTag, activeFilters));
-    //     dispatch(_fetchCountries());
-    //     dispatch(_fetchDistricts());
-    //     dispatch(_fetchProvinces());
-    //     dispatch(_fetchCurrencies());
-    //     dispatch(_fetchResellerGroups());
-    // }, [dispatch, searchTag, activeFilters]);
-
-        useEffect(() => {
+    useEffect(() => {
         dispatch(_fetchResellers(1, searchTag, activeFilters));
-        // dispatch(_fetchCountries());
-        // dispatch(_fetchDistricts());
-        // dispatch(_fetchProvinces());
-        // dispatch(_fetchCurrencies());
-        // dispatch(_fetchResellerGroups());
     }, [dispatch, searchTag, activeFilters]);
 
-useEffect(() => {
-    if (resellerDialog) {
-        // Fetch all required data for dropdowns
-        dispatch(_fetchCountries());
-        dispatch(_fetchDistricts());
-        dispatch(_fetchProvinces());
-        dispatch(_fetchCurrencies());
-        dispatch(_fetchResellerGroups());
-    }
-}, [resellerDialog, dispatch]);
+    useEffect(() => {
+        if (resellerDialog) {
+            dispatch(_fetchCountries());
+            dispatch(_fetchDistricts());
+            dispatch(_fetchProvinces());
+            dispatch(_fetchCurrencies());
+            dispatch(_fetchResellerGroups());
+            dispatch(fetchAppSettings());
+            // Fetch all wallets for the dropdown
+            dispatch(_fetchAllWallets(1, 1000));
+        }
+    }, [resellerDialog, dispatch]);
 
-    // Add this useEffect for click outside detection
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             const target = event.target as HTMLElement;
@@ -168,28 +157,19 @@ useEffect(() => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [filterDialogVisible]);
 
-    useEffect(() => {
-        //console.log(resellers)
-    }, [dispatch, resellers]);
-
-    // Add this useEffect to handle auto-opening the dialog
-    const searchParams = useSearchParams(); // Add this
+    const searchParams = useSearchParams();
 
     useEffect(() => {
         const action = searchParams.get('action');
         if (action === 'add') {
-            // Small delay to ensure the page is fully loaded and Redux state is ready
             const timer = setTimeout(() => {
                 openNew();
-                // Optional: Clean up the URL after opening the dialog
                 router.replace('/pages/reseller');
             }, 300);
 
             return () => clearTimeout(timer);
         }
     }, [searchParams, router]);
-
-
 
     const openNew = () => {
         setReseller(emptyReseller);
@@ -216,8 +196,6 @@ useEffect(() => {
 
     const saveReseller = () => {
         setSubmitted(true);
-        //console.log(reseller);
-        //return;
         if (
             !reseller.reseller_name ||
             !reseller.contact_name ||
@@ -252,19 +230,17 @@ useEffect(() => {
     const editReseller = (reseller: Reseller) => {
         const matchingProvince = provinces.find((r: any) => r.id == reseller.province_id);
 
-        // Type-safe boolean conversion function
         const toBoolean = (value: boolean | string | number | undefined): boolean => {
             if (typeof value === 'boolean') return value;
             if (typeof value === 'string') return value === '1';
             if (typeof value === 'number') return value === 1;
-            return false; // default for undefined
+            return false;
         };
 
-        // Type-safe number conversion function (for 1/0 fields)
         const toBinaryNumber = (value: number | string | undefined): number => {
             if (typeof value === 'number') return value;
             if (typeof value === 'string') return value === '1' ? 1 : 0;
-            return 0; // default for undefined
+            return 0;
         };
 
         setReseller({
@@ -274,8 +250,6 @@ useEffect(() => {
             province_id: parseInt(reseller.province_id?.toString() || '0'),
             districts_id: parseInt(reseller.districts_id?.toString() || '0'),
             reseller_group_id: parseInt(reseller.reseller_group_id?.toString() || '0'),
-
-            // Boolean fields
             can_set_commission_group: toBoolean(reseller.can_set_commission_group),
             can_set_selling_price_group: toBoolean(reseller.can_set_selling_price_group),
             can_send_payment_request: toBoolean(reseller.can_send_payment_request),
@@ -283,10 +257,10 @@ useEffect(() => {
             can_see_our_contact: toBoolean(reseller.can_see_our_contact),
             can_see_parent_contact: toBoolean(reseller.can_see_parent_contact),
             can_send_hawala: toBoolean(reseller.can_send_hawala),
-
-            // Number fields (1/0)
             can_create_sub_resellers: toBinaryNumber(reseller.can_create_sub_resellers),
-            sub_resellers_can_create_sub_resellers: toBinaryNumber(reseller.sub_resellers_can_create_sub_resellers)
+            sub_resellers_can_create_sub_resellers: toBinaryNumber(reseller.sub_resellers_can_create_sub_resellers),
+            active_wallet_id: reseller.active_wallet_id || null,
+            preferred_wallet_deduction_mode: reseller.preferred_wallet_deduction_mode || null,
         });
 
         setResellerDialog(true);
@@ -325,18 +299,12 @@ useEffect(() => {
     };
 
     const viewResellerDetails = (resellerId: string | number) => {
-        //dispatch(_getResellerById(reseller.id))
         router.push(`/pages/reseller/${resellerId}`);
     };
-
-    useEffect(() => {
-        //console.log(singleReseller)
-    }, [dispatch, singleReseller]);
 
     const leftToolbarTemplate = () => {
         return (
             <div className="flex flex-col sm:flex-row gap-2 w-full">
-                {/* Search Input - Full width on mobile, auto on desktop */}
                 <div className="flex-grow flex-1">
                     <span className="p-input-icon-left w-full">
                         <i className="pi pi-search" />
@@ -349,10 +317,8 @@ useEffect(() => {
                     </span>
                 </div>
 
-                {/* Export Button - Full width on mobile, auto on desktop */}
                 <Button
                     label={window.innerWidth >= 640 ? t('EXPORT.EXPORT') : t('EXPORT.EXPORT')}
-
                     icon="pi pi-file-excel"
                     severity="success"
                     onClick={exportToExcel}
@@ -365,12 +331,10 @@ useEffect(() => {
     const rightToolbarTemplate = () => {
         return (
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                {/* Filter Button with Dropdown */}
                 <div className="flex-1 w-full sm:w-auto" ref={filterRef} style={{ position: 'relative' }}>
                     <Button
                         className={`p-button-info w-full sm:w-auto ${isRTL() ? 'rtl-button' : ''}`}
                         label={window.innerWidth >= 640 ? t('FILTER') : t('FILTER')}
-
                         icon="pi pi-filter"
                         onClick={() => setFilterDialogVisible(!filterDialogVisible)}
                     />
@@ -380,8 +344,8 @@ useEffect(() => {
                             style={{
                                 position: 'absolute',
                                 top: '100%',
-                                left: isRTL() ? 'auto' : 0,  // Changed this line
-                                right: isRTL() ? 0 : 'auto', // Changed this line
+                                left: isRTL() ? 'auto' : 0,
+                                right: isRTL() ? 0 : 'auto',
                                 width: '250px',
                                 zIndex: 1000,
                                 marginTop: '0.5rem',
@@ -389,7 +353,6 @@ useEffect(() => {
                             }}
                         >
                             <div className="p-card-body" style={{ padding: '1rem' }}>
-                                {/* Filter dialog content remains the same */}
                                 <div className="grid">
                                     <div className="col-12">
                                         <label htmlFor="statusFilter" style={{ fontSize: '0.875rem' }}>
@@ -407,22 +370,6 @@ useEffect(() => {
                                             style={{ width: '100%' }}
                                         />
                                     </div>
-                                    {/* <div className="col-12">
-                                        <label htmlFor="loanFilter" style={{ fontSize: '0.875rem' }}>
-                                            {t('RESELLER.TABLE.COLUMN.LOANAMOUNT')}
-                                        </label>
-                                        <Dropdown
-                                            id="loanFilter"
-                                            options={[
-                                                { label: t('HAS_LOAN'), value: '1' },
-                                                { label: t('NO_LOAN'), value: '0' }
-                                            ]}
-                                            value={filters.filter_has_loan}
-                                            onChange={(e) => setFilters({ ...filters, filter_has_loan: e.value })}
-                                            placeholder={t('SELECT_LOAN_STATUS')}
-                                            style={{ width: '100%' }}
-                                        />
-                                    </div> */}
                                     <div className="col-12">
                                         <label htmlFor="startDateFilter" style={{ fontSize: '0.875rem' }}>
                                             {t('START_DATE')}
@@ -465,11 +412,9 @@ useEffect(() => {
                     )}
                 </div>
 
-                {/* Create Reseller Button */}
                 <Button
                     className={`flex-1 w-full sm:w-auto ${isRTL() ? 'rtl-button' : ''}`}
                     label={window.innerWidth >= 640 ? t('ADD') : t('ADD')}
-
                     icon="pi pi-plus"
                     severity="success"
                     onClick={openNew}
@@ -491,8 +436,8 @@ useEffect(() => {
                             padding: '2px',
                             width: '45px',
                             height: '45px',
-                            borderRadius: '50%', // Makes the image circular
-                            objectFit: 'cover' // Ensures the image is cropped correctly within the circle
+                            borderRadius: '50%',
+                            objectFit: 'cover'
                         }}
                     />
                     <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'start' }}>
@@ -506,7 +451,7 @@ useEffect(() => {
 
     const parentNameBodyTemplate = (rowData: Reseller) => {
         if (!rowData.parent_reseller_name && !rowData.parent_reseller_profile_image_url) {
-            return null; // or return <></> if you prefer
+            return null;
         }
 
         return (
@@ -568,7 +513,6 @@ useEffect(() => {
                             severity="success"
                             className="w-full justify-content-center mb-1"
                         />
-                        // <span key={index}>{wallet.currency_code}: {parseFloat(wallet.balance).toLocaleString()}</span>
                     ))}
                 </div>
             </>
@@ -582,7 +526,6 @@ useEffect(() => {
                 <span className="p-column-title">{t('WALLETS.AVAILABLE_BALANCE')}</span>
                 <div className="flex flex-column gap-1">
                     {wallets.map((wallet: any, index: number) => {
-                        // Calculate available payment for each wallet
                         const totalPayments = parseFloat(wallet.total_payments_received) || 0;
                         const totalBalance = parseFloat(wallet.total_balance_sent) || 0;
                         const availablePaymentAmount = totalPayments - totalBalance;
@@ -658,38 +601,34 @@ useEffect(() => {
         );
     };
 
+    const loanAmountBodyTemplate = (rowData: Reseller) => {
+        const wallets = rowData.wallets || [];
+        return (
+            <>
+                <span className="p-column-title">{t('WALLETS.LOAN_BALANCE')}</span>
+                <div className="flex flex-column gap-1">
+                    {wallets.map((wallet: any, index: number) => {
+                        const total_payments_received = parseFloat(wallet.total_payments_received);
+                        const total_balance_sent = parseFloat(wallet.total_balance_sent);
+                        let loanAmount = total_balance_sent - total_payments_received;
 
+                        if (loanAmount < 0) {
+                            loanAmount = 0;
+                        }
 
-const loanAmountBodyTemplate = (rowData: Reseller) => {
-    const wallets = rowData.wallets || [];
-    return (
-        <>
-            <span className="p-column-title">{t('WALLETS.LOAN_BALANCE')}</span>
-            <div className="flex flex-column gap-1">
-                {wallets.map((wallet: any, index: number) => {
-                    const total_payments_received = parseFloat(wallet.total_payments_received);
-                    const total_balance_sent = parseFloat(wallet.total_balance_sent) ;
-                    let loanAmount = total_balance_sent - total_payments_received;
-
-                    if(loanAmount<0){
-                        loanAmount=0
-                    }
-
-                    return (
-                        <Badge
-                            key={index}
-                            // value={`${wallet.currency_code}: ${loanAmount > 0 ? loanAmount : 0}`}
-                            value={`${wallet.currency_code}:${loanAmount}`}
-
-                            severity="danger"
-                            className="w-full justify-content-center mb-1"
-                        />
-                    );
-                })}
-            </div>
-        </>
-    );
-};
+                        return (
+                            <Badge
+                                key={index}
+                                value={`${wallet.currency_code}:${loanAmount}`}
+                                severity="danger"
+                                className="w-full justify-content-center mb-1"
+                            />
+                        );
+                    })}
+                </div>
+            </>
+        );
+    };
 
     const preferredCurrencyBodyTemplate = (rowData: Reseller) => {
         const currency = typeof rowData.code === 'object' && rowData.code !== null ? rowData.code.code : rowData.code;
@@ -711,7 +650,6 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
     };
 
     const statusBodyTemplate = (rowData: Reseller) => {
-        // Define the text and background color based on the status value
         const getStatusText = (status: string) => {
             return status == '1' ? 'Active' : 'Deactivated';
         };
@@ -731,31 +669,28 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
     };
 
     const actionBodyTemplate = (rowData: Reseller) => {
-        // Define the dropdown actions
         const items = [
             {
                 label: t('TABLE.GENERAL.EDIT'),
                 icon: 'pi pi-pencil',
                 command: () => editReseller(rowData)
-                //disabled: menuType === 'guest', // Example condition
             },
             {
                 label: t('TABLE.GENERAL.DELETE'),
                 icon: 'pi pi-trash',
                 command: () => confirmDeleteReseller(rowData)
-                //disabled: menuType !== 'admin', // Example condition
             },
             {
                 label: t('ACTIVATE'),
                 icon: 'pi pi-check',
                 command: () => confirmChangeStatus(rowData),
-                visible: rowData.status == 0 // Disable if already active
+                visible: rowData.status == 0
             },
             {
                 label: t('DEACTIVATE'),
                 icon: 'pi pi-times',
                 command: () => confirmChangeStatus(rowData),
-                visible: rowData.status == 1 // Disable if already inactive
+                visible: rowData.status == 1
             },
             {
                 label: t('VIEW_DETAILS'),
@@ -771,21 +706,11 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
                 icon="pi pi-cog"
                 model={items}
                 className="p-button-rounded"
-                severity="info" // Optional: change severity or style
+                severity="info"
                 dir="ltr"
             />
         );
     };
-
-    // const header = (
-    //     <div className="flex flex-column md:flex-row md:justify-content-between md:align-items-center">
-    //         <h5 className="m-0">Manage Products</h5>
-    //         <span className="block mt-2 md:mt-0 p-input-icon-left">
-    //             <i className="pi pi-search" />
-    //             <InputText type="search" onInput={(e) => setGlobalFilter(e.currentTarget.value)} placeholder="Search..." />
-    //         </span>
-    //     </div>
-    // );
 
     const resellerDialogFooter = (
         <>
@@ -793,6 +718,7 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
             <Button label={t('FORM.GENERAL.SUBMIT')} icon="pi pi-check" severity="success" className={isRTL() ? 'rtl-button' : ''} onClick={saveReseller} />
         </>
     );
+
     const deleteResellerDialogFooter = (
         <>
             <Button label={t('APP.GENERAL.CANCEL')} icon="pi pi-times" severity="danger" className={isRTL() ? 'rtl-button' : ''} onClick={hideDeleteResellerDialog} />
@@ -806,6 +732,7 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
             <Button label={t('FORM.GENERAL.SUBMIT')} icon="pi pi-check" severity="success" onClick={changeResellerStatus} />
         </>
     );
+
     const deleteResellersDialogFooter = (
         <>
             <Button label={t('APP.GENERAL.CANCEL')} icon="pi pi-times" severity="danger" className={isRTL() ? 'rtl-button' : ''} onClick={hideDeleteResellersDialog} />
@@ -825,7 +752,7 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
             if (selectedCode) {
                 setReseller((prev) => ({
                     ...prev,
-                    code: selectedCode // Update with the selected company object
+                    code: selectedCode
                 }));
             }
         }
@@ -838,7 +765,7 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
             const filtered = provinces.filter((province: Province) => province.country_id == reseller.country_id);
             setFilteredProvinces(filtered);
         } else {
-            setFilteredProvinces([]); // Optional: Clear when no country selected
+            setFilteredProvinces([]);
         }
     }, [reseller?.country_id, provinces]);
 
@@ -849,11 +776,9 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
             const filtered = districts.filter((district: District) => district.province_id == reseller.province_id);
             setFilteredDistricts(filtered);
         } else {
-            setFilteredDistricts([]); // Optional: Clear when no country selected
+            setFilteredDistricts([]);
         }
     }, [reseller?.province_id, districts]);
-
-
 
     const handleSubmitFilter = (filters: any) => {
         const cleanedFilters = Object.fromEntries(Object.entries(filters).filter(([_, value]) => value !== null && value !== ''));
@@ -867,6 +792,38 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
             all: true
         });
     };
+
+    // Check if wallet_deduction_mode is reseller_choice
+    const showWalletDeductionMode = appSettings?.wallet_deduction_mode === 'reseller_choice';
+
+    // Get wallets for dropdown from allWallets data
+    // Get wallets for dropdown from allWallets data - FIXED
+// Get wallets for dropdown from allWallets data - FIXED without spread duplication
+const walletOptions = allWallets?.data?.map((wallet: Wallet) => ({
+    id: wallet.id,
+    currency_code: wallet.currency?.code || wallet.currency_code || 'Unknown',
+    currency_symbol: wallet.currency?.symbol || wallet.currency_symbol || '',
+    balance: wallet.balance,
+    payment: wallet.payment,
+    loan_balance: wallet.loan_balance,
+    is_default: wallet.is_default,
+    is_active: wallet.is_active,
+    currency: wallet.currency,
+    reseller_id: wallet.reseller_id,
+    currency_id: wallet.currency_id,
+    total_payments_received: wallet.total_payments_received,
+    total_balance_sent: wallet.total_balance_sent,
+    total_earning_balance: wallet.total_earning_balance,
+    total_hawala_sent: wallet.total_hawala_sent,
+    total_hawala_received: wallet.total_hawala_received,
+    daily_hawala_limit: wallet.daily_hawala_limit,
+    monthly_hawala_limit: wallet.monthly_hawala_limit,
+    last_hawala_date: wallet.last_hawala_date,
+    created_at: wallet.created_at,
+    updated_at: wallet.updated_at,
+    reseller: wallet.reseller,
+    total_earnings: wallet.total_earnings,
+})) || [];
 
     return (
         <div className="grid crud-demo -m-5">
@@ -882,7 +839,7 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
                         selection={selectedCompanies}
                         onRowClick={(e) => viewResellerDetails(e.data.id)}
                         dataKey="id"
-                        paginator={false} // Disable PrimeReact's built-in paginator
+                        paginator={false}
                         rows={pagination?.items_per_page}
                         totalRecords={pagination?.total}
                         className="datatable-responsive"
@@ -891,24 +848,20 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
                         }
                         currentPageReportTemplate={
                             isRTL()
-                                ? `${t('DATA_TABLE.TABLE.PAGINATOR.SHOWING')}` // localized RTL string
+                                ? `${t('DATA_TABLE.TABLE.PAGINATOR.SHOWING')}`
                                 : `${t('DATA_TABLE.TABLE.PAGINATOR.SHOWING')}`
                         }
                         globalFilter={globalFilter}
                         emptyMessage={t('DATA_TABLE.TABLE.NO_DATA')}
                         dir={isRTL() ? 'rtl' : 'ltr'}
                         style={{ direction: isRTL() ? 'rtl' : 'ltr', fontFamily: "'iranyekan', sans-serif,iranyekan" }}
-                        // header={header}
-
                         responsiveLayout="scroll"
                     >
-                        {/* <Column selectionMode="multiple" headerStyle={{ width: '4rem' }}></Column> */}
                         <Column style={{ ...customCellStyleImage, textAlign: ['ar', 'fa', 'ps', 'bn'].includes(i18n.language) ? 'right' : 'left' }} body={actionBodyTemplate} headerStyle={{ width: '5rem' }}></Column>
                         <Column
                             style={{ ...customCellStyleImage, textAlign: ['ar', 'fa', 'ps', 'bn'].includes(i18n.language) ? 'right' : 'left' }}
                             field="name"
                             header={t('RESELLER.TABLE.COLUMN.RESELLERNAME')}
-
                             body={nameBodyTemplate}
                         ></Column>
                         <Column style={{ ...customCellStyleImage, textAlign: ['ar', 'fa', 'ps', 'bn'].includes(i18n.language) ? 'right' : 'left' }} field="phone" header={t('RESELLER.TABLE.COLUMN.PHONE')} body={phoneBodyTemplate}></Column>
@@ -953,7 +906,6 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
                             field="preferred_currency"
                             header={t('MENU.CURRENCY')}
                             body={preferredCurrencyBodyTemplate}
-
                         ></Column>
                         <Column style={{ ...customCellStyleImage, textAlign: ['ar', 'fa', 'ps', 'bn'].includes(i18n.language) ? 'right' : 'left' }} field="name" header={t('PARENT_RESELLER_NAME')} body={parentNameBodyTemplate} headerStyle={{ whiteSpace: 'nowrap' }}></Column>
                         <Column style={{ ...customCellStyleImage, textAlign: ['ar', 'fa', 'ps', 'bn'].includes(i18n.language) ? 'right' : 'left' }} field="country" header={t('RESELLER.TABLE.COLUMN.COUNTRY')} body={countryBodyTemplate}></Column>
@@ -969,7 +921,7 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
                         }
                         currentPageReportTemplate={
                             isRTL()
-                                ? `${t('DATA_TABLE.TABLE.PAGINATOR.SHOWING')}` // localized RTL string
+                                ? `${t('DATA_TABLE.TABLE.PAGINATOR.SHOWING')}`
                                 : `${t('DATA_TABLE.TABLE.PAGINATOR.SHOWING')}`
                         }
                         firstPageLinkIcon={
@@ -987,8 +939,8 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
                     <Dialog
                         visible={resellerDialog}
                         style={{
-                            width: '95vw', // Responsive width
-                            maxWidth: '900px' // Max desktop size
+                            width: '95vw',
+                            maxWidth: '900px'
                         }}
                         header={t('RESELLER.DETAILS')}
                         modal
@@ -1001,8 +953,8 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
                                 <img
                                     src={
                                         reseller.profile_image_url instanceof File
-                                            ? URL.createObjectURL(reseller.profile_image_url) // Temporary preview for file
-                                            : reseller.profile_image_url // Direct URL for existing logo
+                                            ? URL.createObjectURL(reseller.profile_image_url)
+                                            : reseller.profile_image_url
                                     }
                                     alt="Uploaded Preview"
                                     width="150"
@@ -1181,9 +1133,9 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
                                         placeholder="Choose a province"
                                         style={{
                                             fontSize: '0.8rem',
-                                            padding: '0.4rem 0.6rem', // Horizontal padding for better text display
+                                            padding: '0.4rem 0.6rem',
                                             height: '40px',
-                                            lineHeight: '1.5', // Ensures text is vertically centered
+                                            lineHeight: '1.5',
                                             display: 'flex',
                                             alignItems: 'center'
                                         }}
@@ -1273,11 +1225,6 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
                                         style={{ fontSize: '0.8rem', height: '40px' }}
                                         className="w-full"
                                     />
-                                    {/* {submitted && !reseller.reseller_group_id && (
-                                        <small className="p-invalid" style={{ color: 'red' }}>
-                                            {t('THIS_FIELD_IS_REQUIRED')}
-                                        </small>
-                                    )} */}
                                 </div>
                                 <div className="field col-6 md:col-6">
                                     <label style={{ fontWeight: 'bold', fontSize: '0.8rem' }} htmlFor="name">
@@ -1449,21 +1396,104 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
                                 </div>
                             </div>
 
+                            {/* New Fields: Active Wallet and Preferred Wallet Deduction Mode */}
+                            <div className="formgrid grid">
+                                <div className="field col">
+                                    <label style={{ fontWeight: 'bold', fontSize: '0.8rem' }} htmlFor="active_wallet_id">
+                                        {t('RESELLER.FORM.LABEL.ACTIVE_WALLET')}
+                                    </label>
+                                   <Dropdown
+    id="active_wallet_id"
+    value={reseller.active_wallet_id}
+    options={walletOptions}
+    onChange={(e) =>
+        setReseller((prev: Reseller) => ({
+            ...prev,
+            active_wallet_id: e.value
+        }))
+    }
+    optionLabel="currency_code"
+    optionValue="id"
+    placeholder={t('RESELLER.FORM.PLACEHOLDER.SELECT_WALLET')}
+    style={{ fontSize: '0.8rem', height: '40px' }}
+    className="w-full"
+    
+    filter
+    filterBy="currency_code"
+    filterPlaceholder={t('ECOMMERCE.COMMON.SEARCH')}
+    itemTemplate={(option: any) => {
+        if (!option) return null;
+        return (
+            <div className="flex align-items-center justify-content-between w-full">
+                <span>{option.currency_code}</span>
+                <span className="text-sm text-500 ml-2">
+                    {t('BALANCE')}: {parseFloat(option.balance || '0').toLocaleString()}
+                </span>
+            </div>
+        );
+    }}
+    valueTemplate={(option: any) => {
+        if (!option) return t('RESELLER.FORM.PLACEHOLDER.SELECT_WALLET');
+        return (
+            <div className="flex align-items-center">
+                <span>{option.currency_code}</span>
+                <span className="text-sm text-500 ml-2">
+                    ({t('BALANCE')}: {parseFloat(option.balance || '0').toLocaleString()})
+                </span>
+            </div>
+        );
+    }}
+/>
+                                    <small className="text-sm text-500">
+                                        {t('RESELLER.FORM.LABEL.ACTIVE_WALLET_DESC')}
+                                    </small>
+                                </div>
+
+                                {showWalletDeductionMode && (
+                                    <div className="field col">
+                                        <label style={{ fontWeight: 'bold', fontSize: '0.8rem' }} htmlFor="preferred_wallet_deduction_mode">
+                                            {t('RESELLER.FORM.LABEL.PREFERRED_WALLET_DEDUCTION_MODE')}
+                                        </label>
+                                        <Dropdown
+                                            id="preferred_wallet_deduction_mode"
+                                            value={reseller.preferred_wallet_deduction_mode}
+                                            options={[
+                                                { label: t('APP_SETTINGS.BUNDLE_CURRENCY_WALLET'), value: 'bundle_currency_wallet' },
+                                                { label: t('APP_SETTINGS.SELECTED_WALLET_CONVERSION'), value: 'selected_wallet_conversion' }
+                                            ]}
+                                            onChange={(e) =>
+                                                setReseller((prev: Reseller) => ({
+                                                    ...prev,
+                                                    preferred_wallet_deduction_mode: e.value
+                                                }))
+                                            }
+                                            placeholder={t('RESELLER.FORM.PLACEHOLDER.SELECT_WALLET_DEDUCTION_MODE')}
+                                            style={{ fontSize: '0.8rem', height: '40px' }}
+                                            className="w-full"
+                                            showClear
+                                        />
+                                        <small className="text-sm text-500">
+                                            {t('RESELLER.FORM.LABEL.PREFERRED_WALLET_DEDUCTION_MODE_DESC')}
+                                        </small>
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="formgrid grid">
                                 <div className="field col-12 md:col-6 flex align-items-center gap-2">
                                     <InputSwitch
                                         id="can_create_sub_resellers"
-                                        checked={reseller.can_create_sub_resellers === 1} // Replace logic as needed
+                                        checked={reseller.can_create_sub_resellers === 1}
                                         onChange={(e) =>
                                             setReseller((prev: Reseller) => ({
                                                 ...prev,
-                                                can_create_sub_resellers: e.value ? 1 : 0 // Adjust values based on your requirements
+                                                can_create_sub_resellers: e.value ? 1 : 0
                                             }))
                                         }
                                         className="w-small"
                                         style={{
-                                            transform: 'scale(0.8)', // Scales down the switch
-                                            marginLeft: '-4px' // Adjust alignment if needed
+                                            transform: 'scale(0.8)',
+                                            marginLeft: '-4px'
                                         }}
                                     />
                                     <label style={{ fontWeight: 'bold', fontSize: '0.8rem', marginTop: '5px' }} htmlFor="inputSwitch1">
@@ -1474,17 +1504,17 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
                                 <div className="field col-12 md:col-6 flex align-items-center gap-2">
                                     <InputSwitch
                                         id="sub_resellers_can_create_sub_resellers"
-                                        checked={reseller.sub_resellers_can_create_sub_resellers === 1} // Replace logic as needed
+                                        checked={reseller.sub_resellers_can_create_sub_resellers === 1}
                                         onChange={(e) =>
                                             setReseller((prev: Reseller) => ({
                                                 ...prev,
-                                                sub_resellers_can_create_sub_resellers: e.value ? 1 : 0 // Adjust values based on your requirements
+                                                sub_resellers_can_create_sub_resellers: e.value ? 1 : 0
                                             }))
                                         }
                                         className="w-small"
                                         style={{
-                                            transform: 'scale(0.8)', // Scales down the switch
-                                            marginLeft: '-4px' // Adjust alignment if needed
+                                            transform: 'scale(0.8)',
+                                            marginLeft: '-4px'
                                         }}
                                     />
                                     <label style={{ fontWeight: 'bold', fontSize: '0.8rem', marginTop: '5px' }} htmlFor="inputSwitch1">
@@ -1493,22 +1523,21 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
                                 </div>
                             </div>
 
-                            {/* new fields */}
                             <div className="formgrid grid">
                                 <div className="field col-12 md:col-6 flex align-items-center gap-2">
                                     <InputSwitch
                                         id="can_set_commission_group"
-                                        checked={reseller.can_set_commission_group === true} // Replace logic as needed
+                                        checked={reseller.can_set_commission_group === true}
                                         onChange={(e) =>
                                             setReseller((prev: Reseller) => ({
                                                 ...prev,
-                                                can_set_commission_group: e.value ? true : false // Adjust values based on your requirements
+                                                can_set_commission_group: e.value ? true : false
                                             }))
                                         }
                                         className="w-small"
                                         style={{
-                                            transform: 'scale(0.8)', // Scales down the switch
-                                            marginLeft: '-4px' // Adjust alignment if needed
+                                            transform: 'scale(0.8)',
+                                            marginLeft: '-4px'
                                         }}
                                     />
                                     <label style={{ fontWeight: 'bold', fontSize: '0.8rem', marginTop: '5px' }} htmlFor="inputSwitch1">
@@ -1519,17 +1548,17 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
                                 <div className="field col-12 md:col-6 flex align-items-center gap-2">
                                     <InputSwitch
                                         id="can_set_selling_price_group"
-                                        checked={reseller.can_set_selling_price_group === true} // Replace logic as needed
+                                        checked={reseller.can_set_selling_price_group === true}
                                         onChange={(e) =>
                                             setReseller((prev: Reseller) => ({
                                                 ...prev,
-                                                can_set_selling_price_group: e.value ? true : false // Adjust values based on your requirements
+                                                can_set_selling_price_group: e.value ? true : false
                                             }))
                                         }
                                         className="w-small"
                                         style={{
-                                            transform: 'scale(0.8)', // Scales down the switch
-                                            marginLeft: '-4px' // Adjust alignment if needed
+                                            transform: 'scale(0.8)',
+                                            marginLeft: '-4px'
                                         }}
                                     />
                                     <label style={{ fontWeight: 'bold', fontSize: '0.8rem', marginTop: '5px' }} htmlFor="inputSwitch1">
@@ -1542,17 +1571,17 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
                                 <div className="field col-12 md:col-6 flex align-items-center gap-2">
                                     <InputSwitch
                                         id="can_send_payment_request"
-                                        checked={reseller.can_send_payment_request === true} // Replace logic as needed
+                                        checked={reseller.can_send_payment_request === true}
                                         onChange={(e) =>
                                             setReseller((prev: Reseller) => ({
                                                 ...prev,
-                                                can_send_payment_request: e.value ? true : false // Adjust values based on your requirements
+                                                can_send_payment_request: e.value ? true : false
                                             }))
                                         }
                                         className="w-small"
                                         style={{
-                                            transform: 'scale(0.8)', // Scales down the switch
-                                            marginLeft: '-4px' // Adjust alignment if needed
+                                            transform: 'scale(0.8)',
+                                            marginLeft: '-4px'
                                         }}
                                     />
                                     <label style={{ fontWeight: 'bold', fontSize: '0.8rem', marginTop: '5px' }} htmlFor="inputSwitch1">
@@ -1563,17 +1592,17 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
                                 <div className="field col-12 md:col-6 flex align-items-center gap-2">
                                     <InputSwitch
                                         id="can_ask_loan_balance"
-                                        checked={reseller.can_ask_loan_balance === true} // Replace logic as needed
+                                        checked={reseller.can_ask_loan_balance === true}
                                         onChange={(e) =>
                                             setReseller((prev: Reseller) => ({
                                                 ...prev,
-                                                can_ask_loan_balance: e.value ? true : false // Adjust values based on your requirements
+                                                can_ask_loan_balance: e.value ? true : false
                                             }))
                                         }
                                         className="w-small"
                                         style={{
-                                            transform: 'scale(0.8)', // Scales down the switch
-                                            marginLeft: '-4px' // Adjust alignment if needed
+                                            transform: 'scale(0.8)',
+                                            marginLeft: '-4px'
                                         }}
                                     />
                                     <label style={{ fontWeight: 'bold', fontSize: '0.8rem', marginTop: '5px' }} htmlFor="inputSwitch1">
@@ -1586,17 +1615,17 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
                                 <div className="field col-12 md:col-6 flex align-items-center gap-2">
                                     <InputSwitch
                                         id="can_see_our_contact"
-                                        checked={reseller.can_see_our_contact === true} // Replace logic as needed
+                                        checked={reseller.can_see_our_contact === true}
                                         onChange={(e) =>
                                             setReseller((prev: Reseller) => ({
                                                 ...prev,
-                                                can_see_our_contact: e.value ? true : false // Adjust values based on your requirements
+                                                can_see_our_contact: e.value ? true : false
                                             }))
                                         }
                                         className="w-small"
                                         style={{
-                                            transform: 'scale(0.8)', // Scales down the switch
-                                            marginLeft: '-4px' // Adjust alignment if needed
+                                            transform: 'scale(0.8)',
+                                            marginLeft: '-4px'
                                         }}
                                     />
                                     <label style={{ fontWeight: 'bold', fontSize: '0.8rem', marginTop: '5px' }} htmlFor="inputSwitch1">
@@ -1607,17 +1636,17 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
                                 <div className="field col-12 md:col-6 flex align-items-center gap-2">
                                     <InputSwitch
                                         id="can_see_parent_contact"
-                                        checked={reseller.can_see_parent_contact === true} // Replace logic as needed
+                                        checked={reseller.can_see_parent_contact === true}
                                         onChange={(e) =>
                                             setReseller((prev: Reseller) => ({
                                                 ...prev,
-                                                can_see_parent_contact: e.value ? true : false // Adjust values based on your requirements
+                                                can_see_parent_contact: e.value ? true : false
                                             }))
                                         }
                                         className="w-small"
                                         style={{
-                                            transform: 'scale(0.8)', // Scales down the switch
-                                            marginLeft: '-4px' // Adjust alignment if needed
+                                            transform: 'scale(0.8)',
+                                            marginLeft: '-4px'
                                         }}
                                     />
                                     <label style={{ fontWeight: 'bold', fontSize: '0.8rem', marginTop: '5px' }} htmlFor="inputSwitch1">
@@ -1630,44 +1659,23 @@ const loanAmountBodyTemplate = (rowData: Reseller) => {
                                 <div className="field col-12 md:col-6 flex align-items-center gap-2">
                                     <InputSwitch
                                         id="can_send_hawala"
-                                        checked={reseller.can_send_hawala === true} // Replace logic as needed
+                                        checked={reseller.can_send_hawala === true}
                                         onChange={(e) =>
                                             setReseller((prev: Reseller) => ({
                                                 ...prev,
-                                                can_send_hawala: e.value ? true : false // Adjust values based on your requirements
+                                                can_send_hawala: e.value ? true : false
                                             }))
                                         }
                                         className="w-small"
                                         style={{
-                                            transform: 'scale(0.8)', // Scales down the switch
-                                            marginLeft: '-4px' // Adjust alignment if needed
+                                            transform: 'scale(0.8)',
+                                            marginLeft: '-4px'
                                         }}
                                     />
                                     <label style={{ fontWeight: 'bold', fontSize: '0.8rem', marginTop: '5px' }} htmlFor="inputSwitch1">
                                         {t('RESELLER.FORM.LABEL.CAN_SEND_HAWALA')}
                                     </label>
                                 </div>
-
-                                {/* <div className="field col-12 md:col-6 flex align-items-center gap-2">
-                                    <InputSwitch
-                                        id="sub_resellers_can_create_sub_resellers"
-                                        checked={reseller.sub_resellers_can_create_sub_resellers === 1} // Replace logic as needed
-                                        onChange={(e) =>
-                                            setReseller((prev: Reseller) => ({
-                                                ...prev,
-                                                sub_resellers_can_create_sub_resellers: e.value ? 1 : 0 // Adjust values based on your requirements
-                                            }))
-                                        }
-                                        className="w-small"
-                                        style={{
-                                            transform: 'scale(0.8)', // Scales down the switch
-                                            marginLeft: '-4px' // Adjust alignment if needed
-                                        }}
-                                    />
-                                    <label style={{ fontWeight: 'bold',fontSize: '0.8rem', fontSize: '12px',marginTop:'5px' }} htmlFor="inputSwitch1">
-                                        {t('RESELLER.FORM.LABEL.SUBRESELLERCANCREATESUBRESELLER')}
-                                    </label>
-                                </div> */}
                             </div>
 
                             <div className="formgrid grid">

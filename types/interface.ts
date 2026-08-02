@@ -297,7 +297,10 @@ export interface Reseller {
     afg_custom_recharge_adjust_type: string;
     afg_custom_recharge_adjust_mode: string;
     afg_custom_recharge_adjust_value: number;
-    wallets?: Wallet[] | null
+    wallets?: Wallet[] | null,
+
+    active_wallet_id?: number | null;
+    preferred_wallet_deduction_mode?: string | null;
 }
 
 export interface User {
@@ -820,6 +823,11 @@ export interface AppSettings {
     afg_custom_recharge_selling_price_adjust_value?: number,
     setaragan_admin_buying_price_percentage?: number,
     custom_recharge_api_provider_id: number | null, // Add this line
+
+    wallet_deduction_mode: string;
+    bundle_price_display_mode: string;
+
+
 
 }
 
